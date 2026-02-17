@@ -50,7 +50,7 @@ export default function DashboardPage() {
           </Link>
 
           <Link
-            href="#"
+            href="/dashboard/courses"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted"
           >
             <BookOpen className="h-4 w-4" />
@@ -58,7 +58,7 @@ export default function DashboardPage() {
           </Link>
 
           <Link
-            href="#"
+            href="/dashboard/progress"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted"
           >
             <BarChart3 className="h-4 w-4" />
