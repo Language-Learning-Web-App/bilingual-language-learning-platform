@@ -8,6 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Languages, ArrowLeft, Mail, Lock, User } from "lucide-react";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { auth } from "@/app/lib/firebase-config";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+
 const stagger = {
   hidden: {},
   show: {
@@ -25,6 +31,58 @@ const fadeUp = {
 };
 
 export default function SignUpPage() {
+  const router = useRouter();
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (password !== confirmPassword){
+      setError("Passwords do not match");
+      return;
+    }
+    
+    setLoading(true);
+    try{
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+      await updateProfile(cred.user, {
+        displayName: `${firstName} ${lastName}`.trim(),
+      });
+      router.push("/sign-in");
+    }catch (err: any) {
+      setError(err?.message ?? "Sign up failed.");
+    }finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+
+      await signInWithPopup(auth, provider);
+
+      router.push("/");
+    } catch (err: any) {
+      setError(err?.message ?? "Google sign up failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="relative flex min-h-screen">
       {/* Left decorative panel */}
@@ -135,7 +193,7 @@ export default function SignUpPage() {
             <motion.form
               variants={fadeUp}
               className="mt-8 space-y-5"
-              onSubmit={(e) => e.preventDefault()}
+              onSubmit={handleSignUp}
             >
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -147,6 +205,8 @@ export default function SignUpPage() {
                       type="text"
                       placeholder="First Name"
                       className="h-11 pl-10"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
                     />
                   </div>
                 </div>
@@ -157,6 +217,8 @@ export default function SignUpPage() {
                     type="text"
                     placeholder="Last Name"
                     className="h-11"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
                   />
                 </div>
               </div>
@@ -170,6 +232,8 @@ export default function SignUpPage() {
                     type="email"
                     placeholder="Email Address"
                     className="h-11 pl-10"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
               </div>
@@ -183,6 +247,8 @@ export default function SignUpPage() {
                     type="password"
                     placeholder="••••••••"
                     className="h-11 pl-10"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
                 <p className="text-[11px] text-muted-foreground">
@@ -199,15 +265,18 @@ export default function SignUpPage() {
                     type="password"
                     placeholder="••••••••"
                     className="h-11 pl-10"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                   />
                 </div>
               </div>
 
+              {error && <p className="text-sm text-red-500">{error}</p>}
               <Button
                 type="submit"
-                className="h-11 w-full bg-primary text-base font-semibold text-primary-foreground shadow-md shadow-primary/15 transition-all duration-300 hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5"
-              >
-                Create Account
+                className="h-11 w-full bg-primary text-base font-semibold text-primary-foreground shadow-md shadow-primary/15 transition-all duration-300 hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5" 
+                disabled={loading}
+              > {loading ? "Creating Account..." : "Create Account"}
               </Button>
             </motion.form>
 
@@ -224,6 +293,8 @@ export default function SignUpPage() {
                 <Button
                   variant="outline"
                   className="h-11 w-full gap-2 text-sm font-medium"
+                  onClick={handleGoogleSignUp}
+                  disabled={loading}
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24">
                     <path
