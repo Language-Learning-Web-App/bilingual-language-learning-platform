@@ -1,10 +1,14 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import {
   ArrowLeft,
   PlayCircle,
+  CheckCircle2,
+  MoreVertical,
   Plane,
   BedDouble,
   Coffee,
@@ -22,6 +26,12 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { LucideIcon } from "lucide-react";
 
 interface Lesson {
@@ -51,6 +61,8 @@ const lessons: Lesson[] = [
   { id: 15, title: "At a Friend's House", description: "Small talk and socializing.", icon: Users, color: "text-cyan-500", bg: "bg-cyan-50" },
 ];
 
+const TOTAL_SECTIONS = 6;
+
 const fadeIn = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
@@ -61,7 +73,31 @@ interface CourseLessonsPageProps {
   flag: string;
 }
 
+function getLessonProgress(courseName: string, lessonId: number): number {
+  if (typeof window === "undefined") return -1;
+  try {
+    const key = `bllp-${courseName.toLowerCase()}-lesson-${lessonId}`;
+    const raw = localStorage.getItem(key);
+    return raw !== null ? parseInt(raw, 10) : -1;
+  } catch {
+    return -1;
+  }
+}
+
 export default function CourseLessonsPage({ name, flag }: CourseLessonsPageProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [progressMap, setProgressMap] = useState<Record<number, number>>({});
+
+  useEffect(() => {
+    const map: Record<number, number> = {};
+    lessons.forEach((l) => {
+      const p = getLessonProgress(name, l.id);
+      if (p >= 0) map[l.id] = p;
+    });
+    setProgressMap(map);
+  }, [name]);
+
   return (
     <>
       <div className="mb-8">
@@ -87,37 +123,107 @@ export default function CourseLessonsPage({ name, flag }: CourseLessonsPageProps
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {lessons.map((lesson) => (
-          <motion.div
-            key={lesson.id}
-            variants={fadeIn}
-            initial="hidden"
-            animate="show"
-            className="group rounded-xl border bg-card p-5 shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
-          >
-            <div className="flex items-start justify-between">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${lesson.bg} ${lesson.color}`}>
-                <lesson.icon className="h-5 w-5" />
-              </div>
-              <PlayCircle className="h-5 w-5 text-primary" />
-            </div>
+        {lessons.map((lesson) => {
+          const progress = progressMap[lesson.id];
+          const hasStarted = progress !== undefined;
+          const isComplete = progress >= TOTAL_SECTIONS;
+          const percent = hasStarted
+            ? Math.round((progress / TOTAL_SECTIONS) * 100)
+            : 0;
 
-            <h3 className="mt-3 font-display text-sm font-bold text-foreground">
-              {lesson.title}
-            </h3>
-
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {lesson.description}
-            </p>
-
-            <Button
-              size="sm"
-              className="mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90"
+          return (
+            <motion.div
+              key={lesson.id}
+              variants={fadeIn}
+              initial="hidden"
+              animate="show"
+              className="group relative rounded-xl border bg-card p-5 shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
             >
-              Start Lesson
-            </Button>
-          </motion.div>
-        ))}
+              <div className="flex items-start justify-between">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${lesson.bg} ${lesson.color}`}>
+                  <lesson.icon className="h-5 w-5" />
+                </div>
+                <div className="flex items-center gap-1">
+                  {isComplete ? (
+                    <CheckCircle2
+                      className="h-5 w-5 text-emerald-500 cursor-pointer hover:scale-110 transition-transform"
+                      onClick={() => router.push(`${pathname}/lesson-${lesson.id}`)}
+                    />
+                  ) : (
+                    <PlayCircle
+                      className="h-5 w-5 text-primary cursor-pointer hover:scale-110 transition-transform"
+                      onClick={() => router.push(`${pathname}/lesson-${lesson.id}`)}
+                    />
+                  )}
+                  {hasStarted && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const key = `bllp-${name.toLowerCase()}-lesson-${lesson.id}`;
+                            localStorage.removeItem(key);
+                            setProgressMap((prev) => {
+                              const next = { ...prev };
+                              delete next[lesson.id];
+                              return next;
+                            });
+                          }}
+                          className="text-foreground"
+                        >
+                          Restart Lesson
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              </div>
+
+              <h3 className="mt-3 font-display text-sm font-bold text-foreground">
+                {lesson.title}
+              </h3>
+
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                {lesson.description}
+              </p>
+
+              {hasStarted && !isComplete && (
+                <div className="mt-3">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                    <span>In progress</span>
+                    <span>{percent}%</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {isComplete && (
+                <p className="mt-3 text-xs font-medium text-emerald-600">Completed</p>
+              )}
+
+              <Button
+                size="sm"
+                className={`mt-4 w-full ${
+                  isComplete
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90"
+                }`}
+                onClick={() => router.push(`${pathname}/lesson-${lesson.id}`)}
+              >
+                {isComplete ? "Review" : hasStarted ? "Resume" : "Start Lesson"}
+              </Button>
+            </motion.div>
+          );
+        })}
       </div>
     </>
   );
