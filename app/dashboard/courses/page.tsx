@@ -36,7 +36,18 @@ const allCourses: Course[] = [
 ];
 
 const courseRoutes: Record<string, string> = {
+  Spanish: "/dashboard/courses/spanish",
+  French: "/dashboard/courses/french",
+  German: "/dashboard/courses/german",
+  Japanese: "/dashboard/courses/japanese",
+  Arabic: "/dashboard/courses/arabic",
   Turkish: "/dashboard/courses/turkish",
+  Italian: "/dashboard/courses/italian",
+  Portuguese: "/dashboard/courses/portuguese",
+  Serbian: "/dashboard/courses/serbian",
+  Mandarin: "/dashboard/courses/mandarin",
+  Hindi: "/dashboard/courses/hindi",
+  Russian: "/dashboard/courses/russian",
 };
 
 const fadeIn = {
