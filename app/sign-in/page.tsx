@@ -46,7 +46,7 @@ export default function SignInPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err?.message ?? "Sign in failed.");
     } finally {
@@ -64,9 +64,9 @@ export default function SignInPage() {
 
       await signInWithPopup(auth, provider);
 
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: any) {
-      setError(err?.message ?? "Google sign up failed.");
+      setError(err?.message ?? "Google sign in failed.");
     } finally {
       setLoading(false);
     }
