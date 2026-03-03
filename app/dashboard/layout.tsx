@@ -65,11 +65,10 @@ function SidebarContent({
               key={item.label}
               href={item.href}
               onClick={onNavigate}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors ${
-                isActive
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors ${isActive
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted"
-              }`}
+                }`}
             >
               <item.icon className="h-4 w-4" />
               {item.label}
@@ -167,9 +166,12 @@ export default function DashboardLayout({
 
             <div className="flex items-center gap-4">
               <Bell className="h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" />
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <User className="h-4 w-4" />
-              </div>
+
+              <Link href="/dashboard/profile">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground cursor-pointer hover:opacity-90 transition">
+                  <User className="h-4 w-4" />
+                </div>
+              </Link>
             </div>
           </div>
 
