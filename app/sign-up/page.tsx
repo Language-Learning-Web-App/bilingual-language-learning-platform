@@ -58,7 +58,7 @@ export default function SignUpPage() {
       await updateProfile(cred.user, {
         displayName: `${firstName} ${lastName}`.trim(),
       });
-      router.push("/sign-in");
+      router.push("/dashboard");
     }catch (err: any) {
       setError(err?.message ?? "Sign up failed.");
     }finally {
@@ -76,7 +76,7 @@ export default function SignUpPage() {
 
       await signInWithPopup(auth, provider);
 
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err?.message ?? "Google sign up failed.");
     } finally {
