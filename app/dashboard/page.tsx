@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Languages,
   LayoutDashboard,
@@ -15,6 +16,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
+import { signOut } from "firebase/auth";
+import { auth } from "@/app/lib/firebase-config";
+
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   show: {
@@ -25,6 +29,18 @@ const fadeUp = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try{
+      await signOut(auth);
+      router.replace("/sign-in");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
+
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
@@ -66,7 +82,7 @@ export default function DashboardPage() {
           </Link>
 
           <Link
-            href="#"
+            href="/settings"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted"
           >
             <Settings className="h-4 w-4" />
@@ -76,7 +92,11 @@ export default function DashboardPage() {
 
         <Separator className="my-6" />
 
-        <Button variant="ghost" className="justify-start gap-2 text-muted-foreground">
+        <Button 
+          variant="ghost" 
+          className="justify-start gap-2 text-muted-foreground"
+          onClick={handleLogout}
+        >
           <LogOut className="h-4 w-4" />
           Log Out
         </Button>
