@@ -25,8 +25,8 @@ import { CoursesProvider } from "./courses-context";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/courses", label: "My Courses", icon: BookOpen },
-  { href: "#", label: "Progress", icon: BarChart3 },
-  { href: "#", label: "Settings", icon: Settings },
+  { href: "/dashboard/progress", label: "Progress", icon: BarChart3 },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 function SidebarContent({
