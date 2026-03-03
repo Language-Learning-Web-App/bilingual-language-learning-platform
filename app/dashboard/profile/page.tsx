@@ -21,7 +21,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState({
     name: user?.displayName || "User",
     email: user?.email || "",
-    bio: "Passionate learner building modern web applications.",
+    bio: "Student.",
   });
 
   function handleChange(

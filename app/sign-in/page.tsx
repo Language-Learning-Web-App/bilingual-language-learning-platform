@@ -10,9 +10,18 @@ import { Languages, ArrowLeft, Mail, Lock } from "lucide-react";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { User } from "firebase/auth";
 import { auth } from "@/app/lib/firebase-config";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { 
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  fetchSignInMethodsForEmail,
+  EmailAuthProvider,
+  linkWithCredential,
+  updateProfile,
+} from "firebase/auth";
+
 
 const stagger = {
   hidden: {},
@@ -58,14 +67,53 @@ export default function SignInPage() {
     setError(null);
     setLoading(true);
 
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
+    
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
 
+    try{
       await signInWithPopup(auth, provider);
 
       router.push("/dashboard");
     } catch (err: any) {
+      if(err?.code === "auth/account-exists-with-different-credential") {
+        const emailFromGoogle = err.customData?.email as string | undefined;
+        const pendingCred = GoogleAuthProvider.credentialFromError(err);
+
+        if(!emailFromGoogle || !pendingCred){
+          setError("Couldnot link accounts. Try again.");
+          setLoading(false);
+          return;
+        }
+
+        try{
+          const methods = await fetchSignInMethodsForEmail(auth, emailFromGoogle);
+
+          if (methods.includes("password")) {
+            const pwd = prompt(
+              "This email alread has a password account. Please enter your password to link it with Google."
+            );
+            if(!pwd){
+              setError("Linking cancelled.");
+              setLoading(false);
+              return;
+            }
+
+            const userCred = await signInWithEmailAndPassword(auth, emailFromGoogle, pwd);
+            await linkWithCredential(userCred.user, pendingCred);
+
+            router.push("/dashboard");
+            return;
+          }
+          setError(`Account exists with: ${methods.join(", ")}. Use that sign-in method first.`);
+        }catch (linkErr: any) {
+          setError(linkErr?.message ?? "Failed to link Google to existing account.");
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
       setError(err?.message ?? "Google sign in failed.");
     } finally {
       setLoading(false);
@@ -252,6 +300,7 @@ export default function SignInPage() {
 
               <div className="mt-4">
                 <Button
+                  type="button"
                   variant="outline"
                   className="h-11 w-full gap-2 text-sm font-medium"
                   onClick={handleGoogleSignUp}
