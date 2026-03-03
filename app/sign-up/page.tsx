@@ -66,7 +66,7 @@ export default function SignUpPage() {
       await updateProfile(cred.user, {
         displayName: `${firstName} ${lastName}`.trim(),
       });
-      router.push("/sign-in");
+      router.push("/dashboard");
     }catch (err: any) {
       setError(err?.message ?? "Sign up failed.");
     }finally {
@@ -85,7 +85,7 @@ export default function SignUpPage() {
     try {
       await signInWithPopup(auth, provider);
 
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: any) {
       if (err?.code === "auth/account-exists-with-different-credential") {
         try{
