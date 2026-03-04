@@ -5,9 +5,9 @@
 **Submission:** All file submissions must be through GitHub. Submit only the **URL to the folder** in your repository containing the PDFs.
 
 **Folder URL (after push):**  
-`https://github.com/Language-Learning-Web-App/bilingual-language-learning-platform/tree/main/docs/Sayed-Docs`
+`https://github.com/Language-Learning-Web-App/bilingual-language-learning-platform/tree/main/docs`
 
-*Place your SonarQube and Trivy PDF reports in this folder (`docs/Sayed-Docs/`) and push to main. Submit the URL above.*
+*Place your SonarQube and Trivy PDF reports in the `docs/` folder and push to main. Submit the URL above.*
 
 ---
 
@@ -38,7 +38,7 @@
 
 ### Trivy
 
-*Dependency scan performed via npm audit (Trivy CLI was installed but vulnerability DB download failed in this environment). See `Trivy-Sprint2-Summary.md` in this folder. For a Trivy PDF, run locally: `trivy fs .` and `trivy sbom package-lock.json`.*
+*Dependency scan performed via npm audit (Trivy CLI was installed but vulnerability DB download failed in this environment). See `Trivy-Sprint2-Summary.md` in docs. For a Trivy PDF, run locally: `trivy fs .` and `trivy sbom package-lock.json`.*
 
 | Severity | Count |
 |----------|-------|
