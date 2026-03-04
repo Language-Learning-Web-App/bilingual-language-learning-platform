@@ -11,8 +11,16 @@ import { Languages, ArrowLeft, Mail, Lock, User } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/app/lib/firebase-config";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { 
+  createUserWithEmailAndPassword,
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
+  fetchSignInMethodsForEmail,
+  signInWithEmailAndPassword,
+  linkWithCredential,
+} from "firebase/auth";
+
 
 const stagger = {
   hidden: {},
@@ -58,7 +66,7 @@ export default function SignUpPage() {
       await updateProfile(cred.user, {
         displayName: `${firstName} ${lastName}`.trim(),
       });
-      router.push("/sign-in");
+      router.push("/dashboard");
     }catch (err: any) {
       setError(err?.message ?? "Sign up failed.");
     }finally {
@@ -70,14 +78,48 @@ export default function SignUpPage() {
     setError(null);
     setLoading(true);
 
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
+    
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
 
+    try {
       await signInWithPopup(auth, provider);
 
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: any) {
+      if (err?.code === "auth/account-exists-with-different-credential") {
+        try{
+          const email = err.customData?.email as string | undefined;
+          const pendingCred = GoogleAuthProvider.credentialFromError(err);
+
+          if (!email || !pendingCred) throw err;
+
+          const methods = await fetchSignInMethodsForEmail(auth, email);
+
+          if (methods.includes("password")) {
+            const password = prompt(
+              "An account already exists with this email. Please enter your password to link your Google account:"
+            );
+            if (!password) {
+              setError("Linking cancelled.");
+              return;
+            }
+            
+            const userCred = await signInWithEmailAndPassword(auth, email, password);
+            await linkWithCredential(userCred.user, pendingCred);
+
+            router.push("/");
+            return;
+          }
+          
+          setError(`Account exists with: ${methods.join(", ")}`);
+          return;
+        } catch (linkErr: any) {
+          setError(linkErr?.message ?? "Account linking failed.");
+          return;
+        }
+      }
+
       setError(err?.message ?? "Google sign up failed.");
     } finally {
       setLoading(false);
@@ -291,6 +333,7 @@ export default function SignUpPage() {
 
               <div className="mt-4">
                 <Button
+                  type="button"
                   variant="outline"
                   className="h-11 w-full gap-2 text-sm font-medium"
                   onClick={handleGoogleSignUp}

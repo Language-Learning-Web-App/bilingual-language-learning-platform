@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Languages,
   LayoutDashboard,
@@ -15,6 +16,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
+import { signOut } from "firebase/auth";
+import { auth } from "@/app/lib/firebase-config";
+
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   show: {
@@ -25,6 +29,18 @@ const fadeUp = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try{
+      await signOut(auth);
+      router.replace("/sign-in");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
+
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
@@ -66,7 +82,7 @@ export default function DashboardPage() {
           </Link>
 
           <Link
-            href="#"
+            href="/settings"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted"
           >
             <Settings className="h-4 w-4" />
@@ -76,67 +92,79 @@ export default function DashboardPage() {
 
         <Separator className="my-6" />
 
-        <Button variant="ghost" className="justify-start gap-2 text-muted-foreground">
+        <Button 
+          variant="ghost" 
+          className="justify-start gap-2 text-muted-foreground"
+          onClick={handleLogout}
+        >
           <LogOut className="h-4 w-4" />
           Log Out
         </Button>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 p-6 lg:p-10">
-        {/* Top Bar */}
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="font-display text-3xl font-bold tracking-tight">
-            Welcome back 👋
-          </h1>
+export default function DashboardPage() {
+  const { enrolled, activity } = useCourses();
 
-          <div className="flex items-center gap-4">
-            <Bell className="h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground" />
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <User className="h-4 w-4" />
-            </div>
-          </div>
+  return (
+    <>
+      <h1 className="font-display text-3xl font-bold tracking-tight mb-8">
+        Welcome back 👋
+      </h1>
+
+      {/* Stats Grid */}
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+        className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
+          <p className="text-sm text-muted-foreground">Active Courses</p>
+          <p className="mt-2 text-3xl font-bold">{enrolled.length}</p>
         </div>
 
-        {/* Stats Grid */}
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          <div className="rounded-xl border bg-card p-6 shadow-sm">
-            <p className="text-sm text-muted-foreground">Active Courses</p>
-            <p className="mt-2 text-3xl font-bold">3</p>
-          </div>
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
+          <p className="text-sm text-muted-foreground">Hours Learned</p>
+          <p className="mt-2 text-3xl font-bold">0</p>
+        </div>
 
-          <div className="rounded-xl border bg-card p-6 shadow-sm">
-            <p className="text-sm text-muted-foreground">Hours Learned</p>
-            <p className="mt-2 text-3xl font-bold">42</p>
-          </div>
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
+          <p className="text-sm text-muted-foreground">Current Streak</p>
+          <p className="mt-2 text-3xl font-bold">0 days</p>
+        </div>
+      </motion.div>
 
-          <div className="rounded-xl border bg-card p-6 shadow-sm">
-            <p className="text-sm text-muted-foreground">Current Streak</p>
-            <p className="mt-2 text-3xl font-bold">12 days</p>
-          </div>
-        </motion.div>
+      {/* Recent Activity */}
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+        className="mt-10 rounded-xl border bg-card p-6 shadow-sm"
+      >
+        <h2 className="mb-4 text-lg font-semibold">Recent Activity</h2>
 
-        {/* Recent Activity */}
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          className="mt-10 rounded-xl border bg-card p-6 shadow-sm"
-        >
-          <h2 className="mb-4 text-lg font-semibold">Recent Activity</h2>
-
-          <div className="space-y-4 text-sm text-muted-foreground">
-            <p>✔ Completed Lesson 4 – Spanish Basics</p>
-            <p>✔ Practiced Vocabulary – 20 words</p>
-            <p>✔ Earned 150 XP</p>
-          </div>
-        </motion.div>
-      </main>
-    </div>
+        <div className="space-y-3">
+          {activity.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No activity yet.</p>
+          ) : (
+            activity.map((entry, i) => (
+              <div
+                key={`${entry.course}-${entry.timestamp.getTime()}-${i}`}
+                className="flex items-center justify-between text-sm"
+              >
+                <span className="text-muted-foreground">
+                  {entry.action === "enrolled"
+                    ? `Enrolled in ${entry.course}`
+                    : `Dropped ${entry.course}`}
+                </span>
+                <span className="text-xs text-muted-foreground/60">
+                  {formatTime(entry.timestamp)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </motion.div>
+    </>
   );
 }
