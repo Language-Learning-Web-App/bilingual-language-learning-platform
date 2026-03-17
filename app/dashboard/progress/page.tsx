@@ -36,6 +36,9 @@ const weeklyData = [
   { day: "Sun", hours: 2 },
 ];
 
+// Streak counter (mock)
+const streakDays = 5;
+
 // Colors for pie
 const COLORS = ["#6366f1", "#22c55e", "#f59e0b"];
 
@@ -48,11 +51,19 @@ export default function ProgressPage() {
       className="max-w-6xl mx-auto space-y-10"
     >
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Your Progress</h1>
-        <p className="text-muted-foreground mt-2">
-          Track your learning progress for each course.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Your Progress</h1>
+          <p className="text-muted-foreground mt-2">
+            Track your learning progress for each course.
+          </p>
+        </div>
+
+        {/* Streak Counter */}
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded-full shadow-md flex items-center space-x-2">
+          <span>🔥</span>
+          <span>{streakDays}-Day Streak</span>
+        </div>
       </div>
 
       {/* Progress Cards */}
@@ -92,11 +103,16 @@ export default function ProgressPage() {
                     className="text-primary"
                     fill="transparent"
                     strokeDasharray={188}
-                    strokeDashoffset={
-                      188 - (progressPercent / 100) * 188
-                    }
-                    strokeLinecap="round"
-                  />
+                    strokeDashoffset={188} // start hidden
+                  >
+                    <animate
+                      attributeName="stroke-dashoffset"
+                      from={188}
+                      to={188 - (progressPercent / 100) * 188}
+                      dur="1s"
+                      fill="freeze"
+                    />
+                  </circle>
                 </svg>
                 <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold">
                   {Math.round(progressPercent)}%
@@ -114,14 +130,8 @@ export default function ProgressPage() {
       {/* Charts Section */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Line Chart */}
-        <motion.div
-          variants={fadeUp}
-          className="rounded-xl border bg-card p-6 shadow-sm"
-        >
-          <h2 className="text-lg font-semibold mb-4">
-            Weekly Study Activity
-          </h2>
-
+        <motion.div variants={fadeUp} className="rounded-xl border bg-card p-6 shadow-sm">
+          <h2 className="text-lg font-semibold mb-4">Weekly Study Activity</h2>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={weeklyData}>
               <XAxis dataKey="day" />
@@ -132,20 +142,16 @@ export default function ProgressPage() {
                 dataKey="hours"
                 stroke="#6366f1"
                 strokeWidth={3}
+                animationDuration={1000} // animate line
+                animationEasing="ease-in-out"
               />
             </LineChart>
           </ResponsiveContainer>
         </motion.div>
 
         {/* Pie Chart */}
-        <motion.div
-          variants={fadeUp}
-          className="rounded-xl border bg-card p-6 shadow-sm"
-        >
-          <h2 className="text-lg font-semibold mb-4">
-            Course Time Distribution
-          </h2>
-
+        <motion.div variants={fadeUp} className="rounded-xl border bg-card p-6 shadow-sm">
+          <h2 className="text-lg font-semibold mb-4">Course Time Distribution</h2>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -156,6 +162,8 @@ export default function ProgressPage() {
                 cy="50%"
                 outerRadius={80}
                 label
+                isAnimationActive={true} // animate on load
+                animationDuration={1000}
               >
                 {mockProgress.map((_, index) => (
                   <Cell key={index} fill={COLORS[index % COLORS.length]} />
