@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   LineChart,
@@ -18,31 +19,42 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
-// Mock data
-const mockProgress = [
-  { course: "English 101", hours: 12, completedLessons: 6, totalLessons: 10 },
-  { course: "Spanish Basics", hours: 5, completedLessons: 2, totalLessons: 8 },
-  { course: "French Advanced", hours: 8, completedLessons: 8, totalLessons: 8 },
-];
+// Default mock data if localStorage is empty
+const defaultData = {
+  streak: 5,
+  courses: [
+    { name: "English 101", hours: 12, completedLessons: 6, totalLessons: 10 },
+    { name: "Spanish Basics", hours: 5, completedLessons: 2, totalLessons: 8 },
+    { name: "French Advanced", hours: 8, completedLessons: 8, totalLessons: 8 },
+  ],
+  weeklyActivity: [
+    { day: "Mon", hours: 1 },
+    { day: "Tue", hours: 2 },
+    { day: "Wed", hours: 1.5 },
+    { day: "Thu", hours: 3 },
+    { day: "Fri", hours: 2.5 },
+    { day: "Sat", hours: 4 },
+    { day: "Sun", hours: 2 },
+  ],
+};
 
-// Weekly activity (line chart)
-const weeklyData = [
-  { day: "Mon", hours: 1 },
-  { day: "Tue", hours: 2 },
-  { day: "Wed", hours: 1.5 },
-  { day: "Thu", hours: 3 },
-  { day: "Fri", hours: 2.5 },
-  { day: "Sat", hours: 4 },
-  { day: "Sun", hours: 2 },
-];
-
-// Streak counter (mock)
-const streakDays = 5;
-
-// Colors for pie
+// Colors for pie chart
 const COLORS = ["#6366f1", "#22c55e", "#f59e0b"];
 
 export default function ProgressPage() {
+  const [userData, setUserData] = useState(defaultData);
+
+  // Load from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("userProgress");
+    if (saved) setUserData(JSON.parse(saved));
+  }, []);
+
+  // Save to localStorage whenever userData changes
+  useEffect(() => {
+    localStorage.setItem("userProgress", JSON.stringify(userData));
+  }, [userData]);
+
   return (
     <motion.div
       variants={fadeUp}
@@ -50,7 +62,7 @@ export default function ProgressPage() {
       animate="show"
       className="max-w-6xl mx-auto space-y-10"
     >
-      {/* Header */}
+      {/* Header with streak */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Your Progress</h1>
@@ -62,13 +74,13 @@ export default function ProgressPage() {
         {/* Streak Counter */}
         <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold px-4 py-2 rounded-full shadow-md flex items-center space-x-2">
           <span>🔥</span>
-          <span>{streakDays}-Day Streak</span>
+          <span>{userData.streak}-Day Streak</span>
         </div>
       </div>
 
       {/* Progress Cards */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {mockProgress.map((course, i) => {
+        {userData.courses.map((course, i) => {
           const progressPercent =
             (course.completedLessons / course.totalLessons) * 100;
 
@@ -79,7 +91,7 @@ export default function ProgressPage() {
               className="rounded-xl border bg-card p-6 shadow-sm space-y-4"
             >
               <p className="text-sm text-muted-foreground font-medium">
-                {course.course}
+                {course.name}
               </p>
 
               {/* Circular Progress */}
@@ -103,7 +115,7 @@ export default function ProgressPage() {
                     className="text-primary"
                     fill="transparent"
                     strokeDasharray={188}
-                    strokeDashoffset={188} // start hidden
+                    strokeDashoffset={188} // start at 0
                   >
                     <animate
                       attributeName="stroke-dashoffset"
@@ -130,10 +142,13 @@ export default function ProgressPage() {
       {/* Charts Section */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Line Chart */}
-        <motion.div variants={fadeUp} className="rounded-xl border bg-card p-6 shadow-sm">
+        <motion.div
+          variants={fadeUp}
+          className="rounded-xl border bg-card p-6 shadow-sm"
+        >
           <h2 className="text-lg font-semibold mb-4">Weekly Study Activity</h2>
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={weeklyData}>
+            <LineChart data={userData.weeklyActivity}>
               <XAxis dataKey="day" />
               <YAxis />
               <Tooltip />
@@ -142,7 +157,7 @@ export default function ProgressPage() {
                 dataKey="hours"
                 stroke="#6366f1"
                 strokeWidth={3}
-                animationDuration={1000} // animate line
+                animationDuration={1000}
                 animationEasing="ease-in-out"
               />
             </LineChart>
@@ -150,22 +165,25 @@ export default function ProgressPage() {
         </motion.div>
 
         {/* Pie Chart */}
-        <motion.div variants={fadeUp} className="rounded-xl border bg-card p-6 shadow-sm">
+        <motion.div
+          variants={fadeUp}
+          className="rounded-xl border bg-card p-6 shadow-sm"
+        >
           <h2 className="text-lg font-semibold mb-4">Course Time Distribution</h2>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
-                data={mockProgress}
+                data={userData.courses}
                 dataKey="hours"
-                nameKey="course"
+                nameKey="name"
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
                 label
-                isAnimationActive={true} // animate on load
+                isAnimationActive={true}
                 animationDuration={1000}
               >
-                {mockProgress.map((_, index) => (
+                {userData.courses.map((_, index) => (
                   <Cell key={index} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
