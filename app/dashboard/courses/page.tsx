@@ -75,6 +75,13 @@ export default function CoursesPage() {
     setConfirmDrop(null);
   };
 
+  // Randomized progress for demo (replace with actual data later)
+  const getProgress = (courseName: string, lessons: number) => {
+    if (!enrolled.includes(courseName)) return 0;
+    const completed = Math.floor(Math.random() * (lessons + 1));
+    return Math.round((completed / lessons) * 100);
+  };
+
   return (
     <>
       <h1 className="font-display text-3xl font-bold tracking-tight mb-8">
@@ -90,12 +97,8 @@ export default function CoursesPage() {
               You are about to enroll in the {confirmEnroll} course. Ready to start learning?
             </p>
             <div className="mt-6 flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setConfirmEnroll(null)}>
-                Cancel
-              </Button>
-              <Button onClick={() => handleEnroll(confirmEnroll)}>
-                Enroll
-              </Button>
+              <Button variant="outline" onClick={() => setConfirmEnroll(null)}>Cancel</Button>
+              <Button onClick={() => handleEnroll(confirmEnroll)}>Enroll</Button>
             </div>
           </div>
         </div>
@@ -110,12 +113,8 @@ export default function CoursesPage() {
               Are you sure you want to drop this course? All your activity will be erased.
             </p>
             <div className="mt-6 flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setConfirmDrop(null)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={() => handleDrop(confirmDrop)}>
-                Drop Course
-              </Button>
+              <Button variant="outline" onClick={() => setConfirmDrop(null)}>Cancel</Button>
+              <Button variant="destructive" onClick={() => handleDrop(confirmDrop)}>Drop Course</Button>
             </div>
           </div>
         </div>
@@ -126,51 +125,64 @@ export default function CoursesPage() {
         <section className="mb-10">
           <h2 className="mb-4 text-lg font-semibold">Enrolled Courses</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {enrolledCourses.map((course) => (
-              <motion.div
-                key={course.name}
-                variants={fadeIn}
-                initial="hidden"
-                animate="show"
-                className="group relative rounded-xl border bg-card p-5 shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5"
-              >
-                <div className="absolute right-3 top-3">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => setConfirmDrop(course.name)}
-                        className="text-foreground"
-                      >
-                        Drop Course
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                <span className="text-4xl">{course.flag}</span>
-                <h3 className="mt-3 font-display text-base font-bold">
-                  {course.name}
-                </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {course.lessons} lessons &middot; {course.level}
-                </p>
-                <Button
-                  size="sm"
-                  className="mt-4 w-full"
-                  onClick={() => {
-                    const route = courseRoutes[course.name];
-                    if (route) router.push(route);
-                  }}
+            {enrolledCourses.map((course) => {
+              const progress = getProgress(course.name, course.lessons);
+              return (
+                <motion.div
+                  key={course.name}
+                  variants={fadeIn}
+                  initial="hidden"
+                  animate="show"
+                  className="group relative rounded-xl border bg-card p-5 shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5"
                 >
-                  Continue
-                </Button>
-              </motion.div>
-            ))}
+                  <div className="absolute right-3 top-3">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => setConfirmDrop(course.name)}
+                          className="text-foreground"
+                        >
+                          Drop Course
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <span className="text-4xl">{course.flag}</span>
+                  <h3 className="mt-3 font-display text-base font-bold">{course.name}</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {course.lessons} lessons &middot; {course.level}
+                  </p>
+
+                  {/* Progress Bar */}
+                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-3">
+                    <div
+                      className="h-2 bg-primary rounded-full transition-all duration-700"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 text-right">
+                    {progress}%
+                  </p>
+
+                  <Button
+                    size="sm"
+                    className="mt-4 w-full"
+                    onClick={() => {
+                      const route = courseRoutes[course.name];
+                      if (route) router.push(route);
+                    }}
+                  >
+                    Continue
+                  </Button>
+                </motion.div>
+              );
+            })}
           </div>
         </section>
       )}
@@ -190,9 +202,7 @@ export default function CoursesPage() {
               className="group rounded-xl border bg-card p-5 shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
             >
               <span className="text-4xl">{course.flag}</span>
-              <h3 className="mt-3 font-display text-base font-bold">
-                {course.name}
-              </h3>
+              <h3 className="mt-3 font-display text-base font-bold">{course.name}</h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 {course.lessons} lessons &middot; {course.level}
               </p>
