@@ -30,6 +30,12 @@ const fadeUp = {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const enrolled: string[] = [];
+  const activity: { course: string; action: string; timestamp: Date }[] = [];
+
+  const formatTime = (date: Date): string => {
+    return date.toLocaleDateString();
+  };
 
   const handleLogout = async () => {
     try{
@@ -99,17 +105,14 @@ export default function DashboardPage() {
         >
           <LogOut className="h-4 w-4" />
           Log Out
-        </Button>
-      </aside>
+  </Button>
+</aside>
 
-export default function DashboardPage() {
-  const { enrolled, activity } = useCourses();
-
-  return (
-    <>
-      <h1 className="font-display text-3xl font-bold tracking-tight mb-8">
-        Welcome back 👋
-      </h1>
+{/* Main Content */}
+<main className="flex-1 p-8">
+  <h1 className="font-display text-3xl font-bold tracking-tight mb-8">
+    Welcome back 👋
+  </h1>
 
       {/* Stats Grid */}
       <motion.div
@@ -165,6 +168,7 @@ export default function DashboardPage() {
           )}
         </div>
       </motion.div>
-    </>
+      </main>
+    </div>
   );
 }
