@@ -10,10 +10,19 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/app/lib/firebase-config";
 
+// Activity entries
 export interface ActivityEntry {
   action: "enrolled" | "dropped";
   course: string;
   timestamp: Date;
+}
+
+// Notifications
+export interface Notification {
+  id: number;
+  message: string;
+  time: string;
+  read: boolean;
 }
 
 interface StoredActivity {
@@ -49,6 +58,19 @@ function loadActivity(uid: string): ActivityEntry[] {
   } catch {
     return [];
   }
+}
+
+// Add a notification for a user
+function addNotification(uid: string, message: string) {
+  const raw = localStorage.getItem(`notifications-${uid}`);
+  const existing: Notification[] = raw ? JSON.parse(raw) : [];
+  const newNote: Notification = {
+    id: Date.now(),
+    message,
+    time: "just now",
+    read: false,
+  };
+  localStorage.setItem(`notifications-${uid}`, JSON.stringify([newNote, ...existing]));
 }
 
 export function CoursesProvider({ children }: { children: ReactNode }) {
@@ -87,6 +109,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       { action: "enrolled", course, timestamp: new Date() },
       ...prev,
     ]);
+    if (uid) addNotification(uid, `You enrolled in ${course}`);
   };
 
   const drop = (course: string) => {
@@ -95,6 +118,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
       { action: "dropped", course, timestamp: new Date() },
       ...prev,
     ]);
+    if (uid) addNotification(uid, `You dropped ${course}`);
   };
 
   return (

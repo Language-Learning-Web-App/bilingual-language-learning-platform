@@ -2,31 +2,73 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { auth } from "@/app/lib/firebase-config";
+import { onAuthStateChanged } from "firebase/auth";
+import { useCourses } from "@/app/dashboard/courses-context"; // connect to courses context
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
-// Mock notifications for UI demonstration
-const mockNotifications = [
-  { id: 1, message: "You enrolled in English 101", time: "2h ago", read: false },
-  { id: 2, message: "Your Spanish Basics quiz is available", time: "5h ago", read: false },
-  { id: 3, message: "French Advanced lesson 3 completed", time: "1d ago", read: false },
-];
+export interface Notification {
+  id: number;
+  message: string;
+  time: string;
+  read: boolean;
+}
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const { activity } = useCourses(); // grab user activity
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [uid, setUid] = useState<string | null>(null);
 
-  // Example: mark all as read after 3 seconds (for UI demo)
+  // Track Firebase user
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, read: true }))
-      );
-    }, 3000);
-    return () => clearTimeout(timer);
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) setUid(user.uid);
+      else {
+        setUid(null);
+        setNotifications([]);
+      }
+    });
+    return unsub;
   }, []);
+
+  // Load notifications from localStorage
+  useEffect(() => {
+    if (!uid) return;
+    const saved = localStorage.getItem(`notifications-${uid}`);
+    if (saved) setNotifications(JSON.parse(saved));
+  }, [uid]);
+
+  // Merge activity entries into notifications
+  const mergedNotifications: Notification[] = [
+    // Map recent activity to notification objects
+    ...activity.map((entry, idx) => ({
+      id: entry.timestamp.getTime() + idx, // unique id
+      message:
+        entry.action === "enrolled"
+          ? `Enrolled in ${entry.course}`
+          : `Dropped ${entry.course}`,
+      time: entry.timestamp.toLocaleDateString(),
+      read: false,
+    })),
+    // Existing notifications
+    ...notifications,
+  ].sort((a, b) => b.id - a.id); // newest first
+
+  // Save notifications to localStorage
+  useEffect(() => {
+    if (!uid) return;
+    localStorage.setItem(`notifications-${uid}`, JSON.stringify(notifications));
+  }, [notifications, uid]);
+
+  const markAsRead = (id: number) =>
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+
+  const markAllAsRead = () =>
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
 
   return (
     <motion.div
@@ -35,24 +77,35 @@ export default function NotificationsPage() {
       animate="show"
       className="max-w-4xl mx-auto space-y-8"
     >
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
-        <p className="text-muted-foreground mt-2">
-          Stay updated with your recent activities.
-        </p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
+          <p className="text-muted-foreground mt-2">
+            Stay updated with your recent activities.
+          </p>
+        </div>
+        <button
+          onClick={markAllAsRead}
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/80 transition"
+        >
+          Mark all as read
+        </button>
       </div>
 
+      {/* Notifications / Activity List */}
       <div className="space-y-4">
-        {notifications.length === 0 ? (
+        {mergedNotifications.length === 0 ? (
           <p className="text-sm text-muted-foreground">No notifications yet.</p>
         ) : (
-          notifications.map((note) => (
+          mergedNotifications.map((note) => (
             <motion.div
               key={note.id}
               variants={fadeUp}
-              className={`rounded-lg border bg-card p-4 shadow-sm flex justify-between items-center ${
-                note.read ? "opacity-60" : ""
+              className={`rounded-lg border bg-card p-4 shadow-sm flex justify-between items-center cursor-pointer transition ${
+                note.read ? "opacity-60" : "opacity-100 hover:shadow-md"
               }`}
+              onClick={() => markAsRead(note.id)}
             >
               <p className="text-sm">{note.message}</p>
               <span className="text-xs text-muted-foreground">{note.time}</span>

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useCourses } from "../dashboard/courses-context"; 
+import { useCourses } from "./courses-context";
 import { signOut } from "firebase/auth";
 import { auth } from "@/app/lib/firebase-config";
 
@@ -67,40 +67,6 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Recent Activity */}
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          animate="show"
-          className="mt-10 rounded-xl border bg-card p-6 shadow-sm"
-        >
-          <h2 className="mb-4 text-lg font-semibold">Recent Activity</h2>
-
-          <div className="space-y-3">
-            {activity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No activity yet.
-              </p>
-            ) : (
-              activity.map((entry, i) => (
-                <div
-                  key={`${entry.course}-${entry.timestamp.getTime()}-${i}`}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <span className="text-muted-foreground">
-                    {entry.action === "enrolled"
-                      ? `Enrolled in ${entry.course}`
-                      : `Dropped ${entry.course}`}
-                  </span>
-
-                  <span className="text-xs text-muted-foreground/60">
-                    {formatTime(entry.timestamp)}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </motion.div>
       </main>
     </div>
   );
