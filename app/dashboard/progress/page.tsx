@@ -2,19 +2,36 @@
 
 import { motion } from "framer-motion";
 
+import { useUserProfile } from "@/app/context/UserProfileContext";
+
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
-// Mock data for UI demonstration
-const mockProgress = [
-  { course: "English 101", hours: 12, completedLessons: 6, totalLessons: 10 },
-  { course: "Spanish Basics", hours: 5, completedLessons: 2, totalLessons: 8 },
-  { course: "French Advanced", hours: 8, completedLessons: 8, totalLessons: 8 },
-];
 
 export default function ProgressPage() {
+
+  const { profile } = useUserProfile();
+
+  const TOTAL_SECTIONS = 6;
+  const TOTAL_LESSONS = 15;
+
+  const progressData = profile?.enrolled.map((courseName) =>{
+    const courseProgress = profile.courseProgress.find(
+      (c) => c.courseName === courseName
+    );
+    const completedLessons =
+      courseProgress?.lessons.filter(
+        (l) => l.sectionsComplete >= TOTAL_SECTIONS
+      ).length ?? 0;
+    return {
+      course: courseName,
+      completedLessons,
+      totalLessons: TOTAL_LESSONS,
+    };
+  }) ?? [];
+
   return (
     <motion.div
       variants={fadeUp}
@@ -32,9 +49,14 @@ export default function ProgressPage() {
 
       {/* Progress Cards */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {mockProgress.map((course, i) => {
+        {progressData.length === 0 ? (
+          <p className="text-sm text-muted-foreground col-span-3">
+            No Courses enrolled yet.
+          </p>
+        ) : progressData.map((course, i) => {
           const progressPercent =
             (course.completedLessons / course.totalLessons) * 100;
+
 
           return (
             <motion.div
@@ -45,7 +67,7 @@ export default function ProgressPage() {
               <p className="text-sm text-muted-foreground font-medium">
                 {course.course}
               </p>
-              <p className="text-2xl font-bold">{course.hours} hrs</p>
+      
               <p className="text-xs text-muted-foreground/70">
                 {course.completedLessons}/{course.totalLessons} lessons completed
               </p>

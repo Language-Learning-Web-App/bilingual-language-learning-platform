@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+
 import { motion } from "framer-motion";
+
+import { useState, useEffect } from "react";
+import { useUserProfile } from "@/app/context/UserProfileContext";
+import { updateUserProfile } from "@/app/lib/userProfileService";
 import { auth } from "@/app/lib/firebase-config";
+
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -14,21 +19,31 @@ const fadeUp = {
 };
 
 export default function ProfilePage() {
-  const user = auth.currentUser;
-
+  const { profile: firestoreProfile, refreshProfile } = useUserProfile();
   const [isEditing, setIsEditing] = useState(false);
 
-  const [profile, setProfile] = useState({
-    name: user?.displayName || "User",
-    email: user?.email || "",
-    bio: "Student.",
+  const [localProfile, setLocalProfile] = useState({
+    name: "",
+    email: "",
+    bio: "",
   });
+
+  useEffect(() => {
+    if (firestoreProfile) {
+      setLocalProfile({
+        name: firestoreProfile?.name ?? "User",
+        email: firestoreProfile?.email ?? "",
+        bio: firestoreProfile?.bio ?? "Student",
+      });
+    }
+  }, [firestoreProfile]);
+
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
-    setProfile({
-      ...profile,
+    setLocalProfile({
+      ...localProfile,
       [e.target.name]: e.target.value,
     });
   }
@@ -53,13 +68,13 @@ export default function ProfilePage() {
         {/* Avatar Section */}
         <div className="flex items-center gap-6">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-primary-foreground text-2xl font-bold">
-            {profile.name.charAt(0).toUpperCase()}
+            {localProfile.name.charAt(0).toUpperCase()}
           </div>
 
           <div>
-            <p className="text-lg font-semibold">{profile.name}</p>
+            <p className="text-lg font-semibold">{localProfile.name}</p>
             <p className="text-sm text-muted-foreground">
-              {profile.email}
+              {localProfile.email}
             </p>
           </div>
         </div>
@@ -72,7 +87,7 @@ export default function ProfilePage() {
             </label>
             <input
               name="name"
-              value={profile.name}
+              value={localProfile.name}
               onChange={handleChange}
               disabled={!isEditing}
               className="w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
@@ -85,7 +100,7 @@ export default function ProfilePage() {
             </label>
             <input
               name="email"
-              value={profile.email}
+              value={localProfile.email}
               disabled
               className="w-full rounded-lg border bg-background px-4 py-2 text-sm opacity-60"
             />
@@ -99,7 +114,7 @@ export default function ProfilePage() {
           <textarea
             name="bio"
             rows={3}
-            value={profile.bio}
+            value={localProfile.bio}
             onChange={handleChange}
             disabled={!isEditing}
             className="w-full rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
@@ -111,7 +126,17 @@ export default function ProfilePage() {
           {isEditing ? (
             <>
               <button
-                onClick={() => setIsEditing(false)}
+                onClick={async () => {
+                  const uid = auth.currentUser?.uid;
+                  if (uid) {
+                    await updateUserProfile(uid, {
+                      name: localProfile.name,
+                      bio: localProfile.bio,
+                    });
+                    await refreshProfile();
+                  }
+                  setIsEditing(false);
+                }}
                 className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition"
               >
                 Save Changes

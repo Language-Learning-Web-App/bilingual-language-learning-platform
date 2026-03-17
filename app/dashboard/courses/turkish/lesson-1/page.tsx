@@ -17,6 +17,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { useUserProfile } from "@/app/context/UserProfileContext";
+import { saveLessonProgress } from "@/app/lib/userProfileService";
+import { auth } from "@/app/lib/firebase-config";
+
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
@@ -101,7 +105,9 @@ const quizQuestions = [
 ];
 
 const PASSING_PERCENT = 80;
-const QUIZ_ATTEMPTS_KEY = "bllp-turkish-lesson-1-attempts";
+const COURSE_NAME = "Turkish";
+const LESSON_ID = 1;
+
 
 interface QuizAttempt {
   score: number;
@@ -110,17 +116,8 @@ interface QuizAttempt {
   date: string;
 }
 
-function loadAttempts(): QuizAttempt[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(QUIZ_ATTEMPTS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
 
-const STORAGE_KEY = "bllp-turkish-lesson-1";
+
 
 const sectionLabels = [
   "Vocabulary",
@@ -131,15 +128,6 @@ const sectionLabels = [
   "Quiz",
 ];
 
-function loadProgress(): number {
-  if (typeof window === "undefined") return 0;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? parseInt(raw, 10) : 0;
-  } catch {
-    return 0;
-  }
-}
 
 const aiPrompts = [
   {
@@ -368,25 +356,38 @@ export default function TurkishLesson1Page() {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
 
+  const { profile, refreshProfile } = useUserProfile();
+
   useEffect(() => {
-    const saved = loadProgress();
+    if (!profile) return;
+
+    const courseProgress = profile.courseProgress.find(
+      (c) => c.courseName === COURSE_NAME
+    );
+    const lessonProgress = courseProgress?.lessons.find(
+      (l) => l.lessonId === LESSON_ID
+    );
+    const saved = lessonProgress?.sectionsComplete ?? 0;
     const completed = saved >= sectionLabels.length;
+
     setHighestReached(saved);
     setCurrentSection(completed ? 0 : saved);
     setReviewMode(completed);
-    setAttempts(loadAttempts());
     setMounted(true);
-  }, []);
+  }, [profile]);
 
   const started = true;
 
   useEffect(() => {
     if (!mounted) return;
-    if (!reviewMode && currentSection > highestReached) {
+    if(!reviewMode && currentSection > highestReached) {
       setHighestReached(currentSection);
-      localStorage.setItem(STORAGE_KEY, String(currentSection));
+      const uid = auth.currentUser?.uid;
+      if (uid) {
+        saveLessonProgress(uid, COURSE_NAME, LESSON_ID, currentSection);
+      }
     }
-  }, [currentSection, highestReached, reviewMode, mounted]);
+  }, [currentSection, reviewMode, highestReached, mounted]);
 
   if (!mounted) return null;
 
@@ -697,7 +698,7 @@ export default function TurkishLesson1Page() {
                 </div>
                 <div className="mt-6 flex justify-end">
                   <Button
-                    onClick={() => {
+                    onClick={async () => {
                       const s = quizAnswers.filter(
                         (a, i) => a === quizQuestions[i].correct
                       ).length;
@@ -711,17 +712,14 @@ export default function TurkishLesson1Page() {
                       };
                       const updated = [attempt, ...attempts];
                       setAttempts(updated);
-                      localStorage.setItem(
-                        QUIZ_ATTEMPTS_KEY,
-                        JSON.stringify(updated)
-                      );
-                      setQuizSubmitted(true);
-                      if (passed) {
-                        localStorage.setItem(
-                          STORAGE_KEY,
-                          String(sectionLabels.length)
-                        );
+                      const uid = auth.currentUser?.uid;
+                      if (uid) {
+                        if(passed) {
+                          await saveLessonProgress(uid, COURSE_NAME, LESSON_ID, sectionLabels.length);
+                          await refreshProfile();
+                        }
                       }
+                      setQuizSubmitted(true);
                     }}
                     disabled={quizAnswers.some((a) => a === null)}
                   >
