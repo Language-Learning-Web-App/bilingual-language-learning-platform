@@ -26,7 +26,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/courses", label: "My Courses", icon: BookOpen },
   { href: "/dashboard/progress", label: "Progress", icon: BarChart3 },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 function SidebarContent({

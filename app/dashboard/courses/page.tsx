@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { BookOpen, MoreVertical } from "lucide-react";
@@ -55,15 +55,45 @@ const fadeIn = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
+function slugifyCourse(name: string) {
+  return name.toLowerCase().replace(/\s+/g, "-");
+}
+
+function hasCourseStarted(name: string): boolean {
+  if (typeof window === "undefined") return false;
+  const slug = slugifyCourse(name);
+  const startedKey = `bllp-${slug}-started`;
+
+  if (localStorage.getItem(startedKey) === "true") {
+    return true;
+  }
+
+  const lessonPrefix = `bllp-${slug}-lesson-`;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(lessonPrefix)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export default function CoursesPage() {
   const router = useRouter();
   const { enrolled, enroll, drop } = useCourses();
 
   const [confirmEnroll, setConfirmEnroll] = useState<string | null>(null);
   const [confirmDrop, setConfirmDrop] = useState<string | null>(null);
+  const [startedCourses, setStartedCourses] = useState<Set<string>>(new Set());
 
   const enrolledCourses = allCourses.filter((c) => enrolled.includes(c.name));
   const browseCourses = allCourses.filter((c) => !enrolled.includes(c.name));
+
+  useEffect(() => {
+    const started = new Set(enrolled.filter((name) => hasCourseStarted(name)));
+    setStartedCourses(started);
+  }, [enrolled]);
 
   const handleEnroll = (name: string) => {
     enroll(name);
@@ -126,7 +156,9 @@ export default function CoursesPage() {
         <section className="mb-10">
           <h2 className="mb-4 text-lg font-semibold">Enrolled Courses</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {enrolledCourses.map((course) => (
+            {enrolledCourses.map((course) => {
+              const hasStarted = startedCourses.has(course.name);
+              return (
               <motion.div
                 key={course.name}
                 variants={fadeIn}
@@ -163,14 +195,18 @@ export default function CoursesPage() {
                   size="sm"
                   className="mt-4 w-full"
                   onClick={() => {
+                    const slug = slugifyCourse(course.name);
+                    localStorage.setItem(`bllp-${slug}-started`, "true");
+                    setStartedCourses((prev) => new Set(prev).add(course.name));
                     const route = courseRoutes[course.name];
                     if (route) router.push(route);
                   }}
                 >
-                  Continue
+                  {hasStarted ? "Continue" : "Start"}
                 </Button>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

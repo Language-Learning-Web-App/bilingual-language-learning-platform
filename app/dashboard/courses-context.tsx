@@ -51,6 +51,26 @@ function loadActivity(uid: string): ActivityEntry[] {
   }
 }
 
+function clearCourseProgress(course: string) {
+  try {
+    const slug = course.toLowerCase().replace(/\s+/g, "-");
+    const prefix = `bllp-${slug}`;
+    const keysToRemove: string[] = [];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (key === prefix || key.startsWith(`${prefix}-`)) {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // no-op
+  }
+}
+
 export function CoursesProvider({ children }: { children: ReactNode }) {
   const [uid, setUid] = useState<string | null>(null);
   const [enrolled, setEnrolled] = useState<string[]>([]);
@@ -90,6 +110,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   };
 
   const drop = (course: string) => {
+    clearCourseProgress(course);
     setEnrolled((prev) => prev.filter((c) => c !== course));
     setActivity((prev) => [
       { action: "dropped", course, timestamp: new Date() },
