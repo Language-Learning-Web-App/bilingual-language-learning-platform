@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Bricolage_Grotesque } from "next/font/google";
+import { UserProfileProvider } from "./context/UserProfileContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -28,7 +29,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${bricolage.variable}`}>
-      <body className="antialiased font-sans">{children}</body>
+      <body className="antialiased font-sans">
+        <UserProfileProvider>
+          {children}
+        </UserProfileProvider>
+      </body>
     </html>
   );
 }
