@@ -58,21 +58,4 @@ We will also schedule a clean Trivy run in CI with trusted certificates to avoid
 
 ---
 
-
-To complete this submission section, add the **SonarQube PDF report** and include:
-
-- Bugs
-- Vulnerabilities
-- Code Smells
-- Security Hotspots
-- Quality Gate (Pass/Fail)
-
-Recommended filename:
-
-- `SonarQube-Report-Sprint-3.pdf`
-
-Then place both files in the same folder and submit the GitHub folder URL.
-
----
-
 *This static analysis was generated using automated tools during this sprint.*
