@@ -50,7 +50,7 @@
 
 ---
 
-## 5. Reflection (Short)
+## 5. Reflection
 
 The most problematic area is transitive npm dependencies with multiple HIGH-severity advisories (notably `minimatch`, `hono`, and related packages).  
 Next sprint, we will prioritize dependency upgrades, run `npm audit fix` in a controlled branch, and re-test key user flows before merge.  
@@ -58,7 +58,6 @@ We will also schedule a clean Trivy run in CI with trusted certificates to avoid
 
 ---
 
-## Next Required Report for This Section
 
 To complete this submission section, add the **SonarQube PDF report** and include:
 
