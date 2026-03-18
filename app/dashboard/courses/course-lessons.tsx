@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useUserProfile } from "@/app/context/UserProfileContext";
+import { resetLessonProgress } from "@/app/lib/userProfileService";
+import { auth } from "@/app/lib/firebase-config";
+
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -73,30 +76,18 @@ interface CourseLessonsPageProps {
   flag: string;
 }
 
-function getLessonProgress(courseName: string, lessonId: number): number {
-  if (typeof window === "undefined") return -1;
-  try {
-    const key = `bllp-${courseName.toLowerCase()}-lesson-${lessonId}`;
-    const raw = localStorage.getItem(key);
-    return raw !== null ? parseInt(raw, 10) : -1;
-  } catch {
-    return -1;
-  }
-}
 
 export default function CourseLessonsPage({ name, flag }: CourseLessonsPageProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [progressMap, setProgressMap] = useState<Record<number, number>>({});
+  const { profile, refreshProfile } = useUserProfile();
 
-  useEffect(() => {
-    const map: Record<number, number> = {};
-    lessons.forEach((l) => {
-      const p = getLessonProgress(name, l.id);
-      if (p >= 0) map[l.id] = p;
-    });
-    setProgressMap(map);
-  }, [name]);
+  const courseProgress = profile?.courseProgress.find((c) => c.courseName === name);
+
+  const progressMap: Record<number, number> = {};
+  courseProgress?.lessons.forEach((lesson) => {
+    progressMap[lesson.lessonId] = lesson.sectionsComplete;
+  });
 
   return (
     <>
@@ -115,9 +106,17 @@ export default function CourseLessonsPage({ name, flag }: CourseLessonsPageProps
             <h1 className="font-display text-3xl font-bold tracking-tight">
               {name}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Beginner &middot; 15 lessons &middot; 0% complete
-            </p>
+            {(() => {
+              const completed = Object.values(progressMap).filter(
+                (v) => v >= TOTAL_SECTIONS
+              ).length;
+              const pct = Math.round((completed / lessons.length) * 100);
+              return (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Beginner &middot; 15 lessons &middot; {pct}% complete
+                </p>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -164,14 +163,12 @@ export default function CourseLessonsPage({ name, flag }: CourseLessonsPageProps
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => {
-                            const key = `bllp-${name.toLowerCase()}-lesson-${lesson.id}`;
-                            localStorage.removeItem(key);
-                            setProgressMap((prev) => {
-                              const next = { ...prev };
-                              delete next[lesson.id];
-                              return next;
-                            });
+                          onClick={async () => {
+                            const uid = auth.currentUser?.uid;
+                            if (!uid) return;
+
+                            await resetLessonProgress(uid, name, lesson.id);
+                            await refreshProfile();
                           }}
                           className="text-foreground"
                         >
