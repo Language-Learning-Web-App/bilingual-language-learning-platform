@@ -13,21 +13,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "text is required" }, { status: 400 });
     }
 
-    const isTurkish = lang === "tr-TR";
+    const voice =
+      lang === "sr-RS"
+        ? "verse"       // best Serbian accent
+        : lang === "tr-TR"
+        ? "shimmer"     // best Turkish accent
+        : "alloy";      // fallback for English
 
-    const instructions = isTurkish
-      ? "Speak clearly in Turkish with a natural, friendly tone. Pronounce each word carefully for a language learner. Moderate pace."
-      : "Speak clearly in English with a natural, friendly tone. Moderate pace.";
-
-    const mp3 = await openai.audio.speech.create({
+    const response = await openai.audio.speech.create({
       model: "gpt-4o-mini-tts",
-      voice: "shimmer",
+      voice,
       input: text,
-      instructions,
-      response_format: "mp3",
     });
 
-    const buffer = Buffer.from(await mp3.arrayBuffer());
+    const buffer = Buffer.from(await response.arrayBuffer());
 
     return new NextResponse(buffer, {
       status: 200,
