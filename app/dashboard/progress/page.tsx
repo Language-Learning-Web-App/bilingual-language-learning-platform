@@ -175,15 +175,15 @@ export default function ProgressPage() {
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
-                data={mockProgress}
-                dataKey="hours"
+                data={progressData}
+                dataKey="completedLessons"
                 nameKey="course"
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
                 label
               >
-                {mockProgress.map((_, index) => (
+                {progressData.map((_, index) => (
                   <Cell key={index} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
