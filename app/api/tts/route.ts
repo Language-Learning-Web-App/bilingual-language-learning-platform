@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import sdk from "microsoft-cognitiveservices-speech-sdk";
+import Groq from "groq-sdk";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
 
 export async function POST(req: NextRequest) {
@@ -14,66 +13,47 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "text is required" }, { status: 400 });
     }
 
+    // 1. Serbian → open‑source XTTS v2 TTS server
     if (lang === "sr-RS") {
-      const speechConfig = sdk.SpeechConfig.fromSubscription(
-        process.env.AZURE_SPEECH_KEY!,
-        process.env.AZURE_SPEECH_REGION!
-      );
-
-      speechConfig.speechSynthesisLanguage = "sr-RS";
-      speechConfig.speechSynthesisVoiceName = "Nicholas";
-      const synthesizer = new sdk.SpeechSynthesizer(speechConfig, null);
-
-      const audioBuffer: Buffer = await new Promise((resolve, reject) => {
-        synthesizer.speakTextAsync(
-          text,
-          (res) => {
-            synthesizer.close();
-            resolve(Buffer.from(res.audioData));
-          },
-          (err) => {
-            synthesizer.close();
-            reject(err);
-          }
-        );
+      const ttsResponse = await fetch("http://localhost:5000/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
       });
 
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(audioBuffer);
-          controller.close();
-        },
-      });
+      if (!ttsResponse.ok) {
+        throw new Error("XTTS TTS server error");
+      }
 
-      return new NextResponse(stream, {
+      const audioBuffer = Buffer.from(await ttsResponse.arrayBuffer());
+
+      return new NextResponse(audioBuffer, {
         status: 200,
         headers: {
-          "Content-Type": "audio/mpeg",
+          "Content-Type": "audio/wav",
         },
       });
     }
 
-    // 2. Turkish + English → OpenAI TTS
-    const voice =
-      lang === "tr-TR"
-        ? "shimmer"
-        : "alloy";
-
-    const response = await openai.audio.speech.create({
-      model: "gpt-4o-mini-tts",
-      voice,
-      input: text,
-      response_format: "mp3",
+    // 2. Non‑Serbian → example Groq text processing (no TTS here)
+    const completion = await groq.chat.completions.create({
+      model: "llama3-70b-8192",
+      messages: [
+        {
+          role: "system",
+          content: "Rewrite this text naturally and clearly.",
+        },
+        {
+          role: "user",
+          content: text,
+        },
+      ],
     });
 
-    const buffer = Buffer.from(await response.arrayBuffer());
+    const rewritten = completion.choices[0].message.content ?? text;
 
-    return new NextResponse(buffer, {
-      status: 200,
-      headers: {
-        "Content-Type": "audio/mpeg",
-      },
-    });
+    // You can later send `rewritten` to some other TTS provider if you want.
+    return NextResponse.json({ text: rewritten });
   } catch (error: any) {
     console.error("TTS error:", error);
     return NextResponse.json(
