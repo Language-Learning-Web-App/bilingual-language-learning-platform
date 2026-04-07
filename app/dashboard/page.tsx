@@ -1,7 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useCourses } from "@/app/dashboard/courses-context";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+import { signOut, onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/app/lib/firebase-config";
+
+import { useCourses } from "./courses-context";
+import { formatTime } from "@/app/lib/utils";
+import { useUserProfile } from "../context/UserProfileContext";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -12,23 +20,29 @@ const fadeUp = {
   },
 };
 
-function formatTime(date: Date) {
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
 export default function DashboardPage() {
+  const { profile } = useUserProfile();
+  const router = useRouter();
   const { enrolled, activity } = useCourses();
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.replace("/sign-in");
+      } else if (!user.emailVerified) {
+        router.replace("/verify-email");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
   return (
-    <div className="bg-background">
-      <main className="p-8">
-        <h1 className="mb-8 font-display text-3xl font-bold tracking-tight">
-          Welcome back 👋
+    <div className="flex min-h-screen bg-background">
+      {/* Main Content */}
+      <main className="flex-1 p-8">
+        <h1 className="font-display text-3xl font-bold tracking-tight mb-8">
+          Welcome back, {profile?.name ?? ""} 👋
         </h1>
 
         <motion.div
@@ -63,11 +77,13 @@ export default function DashboardPage() {
 
           <div className="space-y-3">
             {activity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No activity yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No activity yet.
+              </p>
             ) : (
               activity.map((entry, i) => (
                 <div
-                  key={`${entry.course}-${entry.timestamp.getTime()}-${i}`}
+                  key={i}
                   className="flex items-center justify-between text-sm"
                 >
                   <span className="text-muted-foreground">

@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { auth } from "@/app/lib/firebase-config";
 import { 
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
@@ -66,7 +67,11 @@ export default function SignUpPage() {
       await updateProfile(cred.user, {
         displayName: `${firstName} ${lastName}`.trim(),
       });
-      router.push("/dashboard");
+
+      await sendEmailVerification(cred.user);
+      
+      alert("Verification email sent! Please check your inbox.");
+      router.push("/verify-email");
     }catch (err: any) {
       setError(err?.message ?? "Sign up failed.");
     }finally {
