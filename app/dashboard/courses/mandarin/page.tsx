@@ -1,5 +1,5 @@
 import CourseLessonsPage from "../course-lessons";
 
-export default function MandarinCoursePage() {
-  return <CourseLessonsPage name="Mandarin" flag="🇨🇳" />;
+export default function PersianCoursePage() {
+  return <CourseLessonsPage name="Persian" flag="🇮🇷" />;
 }
