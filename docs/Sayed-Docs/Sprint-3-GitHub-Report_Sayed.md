@@ -1,6 +1,6 @@
 # Sprint 3 - GitHub Report (Sayed)
 
-**Sprint period (2 weeks):** Mar 4, 2026 - Mar 17, 2026
+**Sprint period (2 weeks):** Mar 3, 2026 - Mar 17, 2026
 
 ---
 

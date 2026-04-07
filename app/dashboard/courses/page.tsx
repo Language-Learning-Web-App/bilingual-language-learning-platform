@@ -30,7 +30,7 @@ const allCourses: Course[] = [
   { name: "Italian", flag: "🇮🇹", lessons: 15, level: "Beginner" },
   { name: "Portuguese", flag: "🇵🇹", lessons: 15, level: "Beginner" },
   { name: "Serbian", flag: "🇷🇸", lessons: 15, level: "Beginner" },
-  { name: "Mandarin", flag: "🇨🇳", lessons: 15, level: "Beginner" },
+  { name: "Persian", flag: "🇮🇷", lessons: 15, level: "Beginner" },
   { name: "Hindi", flag: "🇮🇳", lessons: 15, level: "Beginner" },
   { name: "Russian", flag: "🇷🇺", lessons: 15, level: "Beginner" },
 ];
@@ -45,7 +45,7 @@ const courseRoutes: Record<string, string> = {
   Italian: "/dashboard/courses/italian",
   Portuguese: "/dashboard/courses/portuguese",
   Serbian: "/dashboard/courses/serbian",
-  Mandarin: "/dashboard/courses/mandarin",
+  Persian: "/dashboard/courses/mandarin",
   Hindi: "/dashboard/courses/hindi",
   Russian: "/dashboard/courses/russian",
 };
@@ -79,6 +79,8 @@ function hasCourseStarted(name: string): boolean {
   return false;
 }
 
+const SECTIONS_PER_LESSON = 6;
+
 export default function CoursesPage() {
   const router = useRouter();
   const { enrolled, enroll, drop } = useCourses();
@@ -105,11 +107,36 @@ export default function CoursesPage() {
     setConfirmDrop(null);
   };
 
-  // Randomized progress for demo (replace with actual data later)
   const getProgress = (courseName: string, lessons: number) => {
     if (!enrolled.includes(courseName)) return 0;
-    const completed = Math.floor(Math.random() * (lessons + 1));
-    return Math.round((completed / lessons) * 100);
+    if (typeof window === "undefined") return 0;
+
+    const slug = slugifyCourse(courseName);
+    const lessonKeyRegex = new RegExp(`^bllp-${slug}-lesson-(\\d+)$`);
+    let completedSections = 0;
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !lessonKeyRegex.test(key)) continue;
+
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+
+      const sections = Number.parseInt(raw, 10);
+      if (Number.isNaN(sections)) continue;
+
+      completedSections += Math.min(
+        Math.max(sections, 0),
+        SECTIONS_PER_LESSON
+      );
+    }
+
+    const totalSections = lessons * SECTIONS_PER_LESSON;
+    if (totalSections <= 0) return 0;
+
+    return Math.round(
+      (Math.min(completedSections, totalSections) / totalSections) * 100
+    );
   };
 
   return (
@@ -188,17 +215,6 @@ export default function CoursesPage() {
                   <h3 className="mt-3 font-display text-base font-bold">{course.name}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {course.lessons} lessons &middot; {course.level}
-                  </p>
-
-                  {/* Progress Bar */}
-                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-3">
-                    <div
-                      className="h-2 bg-primary rounded-full transition-all duration-700"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 text-right">
-                    {progress}%
                   </p>
 
                   <Button

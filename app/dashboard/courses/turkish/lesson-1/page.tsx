@@ -112,12 +112,42 @@ const vocabulary = [
 ];
 
 const keySentences = [
-  { turkish: "Uçuşum saat kaçta?", english: "What time is my flight?" },
-  { turkish: "Bu benim pasaportum.", english: "This is my passport." },
-  { turkish: "Kapı nerede?", english: "Where is the gate?" },
-  { turkish: "Bavulumu teslim etmek istiyorum.", english: "I want to check my suitcase." },
-  { turkish: "Uçuş gecikti mi?", english: "Is the flight delayed?" },
-  { turkish: "Uçağa ne zaman bineceğiz?", english: "When will we board the plane?" },
+  {
+    turkish: "Uçuşum saat kaçta?",
+    english: "What time is my flight?",
+    answerTurkish: "Uçuşunuz saat üçte.",
+    answerEnglish: "Your flight is at three o'clock.",
+  },
+  {
+    turkish: "Bu benim pasaportum.",
+    english: "This is my passport.",
+    answerTurkish: "Teşekkürler, pasaportunuz geçerli.",
+    answerEnglish: "Thank you, your passport is valid.",
+  },
+  {
+    turkish: "Kapı nerede?",
+    english: "Where is the gate?",
+    answerTurkish: "Kapı 12, düz gidip sağa dönün.",
+    answerEnglish: "Gate 12, go straight and turn right.",
+  },
+  {
+    turkish: "Bavulumu teslim etmek istiyorum.",
+    english: "I want to check my suitcase.",
+    answerTurkish: "Tabii, lütfen bavulunuzu tartıya koyun.",
+    answerEnglish: "Of course, please put your suitcase on the scale.",
+  },
+  {
+    turkish: "Uçuş gecikti mi?",
+    english: "Is the flight delayed?",
+    answerTurkish: "Evet, uçuş yaklaşık otuz dakika gecikti.",
+    answerEnglish: "Yes, the flight is delayed by about thirty minutes.",
+  },
+  {
+    turkish: "Uçağa ne zaman bineceğiz?",
+    english: "When will we board the plane?",
+    answerTurkish: "Biniş on beş dakika içinde başlayacak.",
+    answerEnglish: "Boarding will begin in fifteen minutes.",
+  },
 ];
 
 const dialogue = [
@@ -315,6 +345,24 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
   const [showHint, setShowHint] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [playingAiId, setPlayingAiId] = useState<string | null>(null);
+
+  const handleSpeakAi = (id: string, text: string) => {
+    if (playingAiId === id) {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      setPlayingAiId(null);
+      return;
+    }
+
+    setPlayingAiId(id);
+    speak(text, "tr-TR", () => setPlayingAiId(null));
+  };
 
   const startListening = () => {
     const SpeechRecognition =
@@ -397,6 +445,11 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
         <div className="p-5 space-y-4 max-h-[400px] overflow-y-auto">
           {messages.map((msg, i) => (
             <div key={i}>
+              {(() => {
+                const aiId = `ai-roleplay-${i}`;
+                const isAiPlaying = msg.role === "ai" && playingAiId === aiId;
+                return (
+                  <>
               <p
                 className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${
                   msg.role === "you"
@@ -410,13 +463,37 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
                 className={`flex ${msg.role === "you" ? "justify-end" : ""}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
+                  className={`relative overflow-hidden max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
                     msg.role === "ai"
                       ? "bg-muted text-foreground"
                       : "bg-primary text-primary-foreground"
                   }`}
                 >
-                  {msg.text}
+                  <div className="relative z-10 flex items-center justify-between gap-2">
+                    <span className="break-words">{msg.text}</span>
+                    {msg.role === "ai" && (
+                      <button
+                        type="button"
+                        onClick={() => handleSpeakAi(aiId, msg.text)}
+                        className={`shrink-0 rounded-full p-1 transition-colors ${
+                          isAiPlaying
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                        }`}
+                        title={`Listen: ${msg.text}`}
+                      >
+                        <Volume2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {isAiPlaying && (
+                    <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
+                      <div
+                        className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+                        style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               {msg.english && (
@@ -428,6 +505,9 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
                   {msg.english}
                 </p>
               )}
+                  </>
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -579,8 +659,11 @@ export default function TurkishLesson1Page() {
     (a, i) => a === quizQuestions[i].correct
   ).length;
 
+  const progressStep = reviewMode || quizSubmitted
+    ? sectionLabels.length
+    : currentSection + 1;
   const progressPercent = Math.round(
-    ((Math.max(highestReached, currentSection) + (quizSubmitted ? 1 : 0)) / sectionLabels.length) * 100
+    (progressStep / sectionLabels.length) * 100
   );
 
   return (
@@ -619,7 +702,7 @@ export default function TurkishLesson1Page() {
         >
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
             <span>{sectionLabels[Math.min(currentSection, sectionLabels.length - 1)]}</span>
-            <span>{reviewMode ? "Completed — Review Mode" : `${progressPercent}% complete`}</span>
+            {reviewMode ? <span>Completed — Review Mode</span> : null}
           </div>
           <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
             <motion.div
@@ -629,10 +712,12 @@ export default function TurkishLesson1Page() {
               transition={{ duration: 0.4 }}
             />
           </div>
-          <div className="flex justify-between mt-2">
+          <div className="mt-2 overflow-x-auto">
+            <div className="flex min-w-max items-center justify-between gap-2">
             {sectionLabels.map((label, i) => {
               const completed =
-                i < highestReached ||
+                reviewMode ||
+                i < currentSection ||
                 (i === sectionLabels.length - 1 && quizSubmitted);
               const active = i === currentSection;
               const clickable = reviewMode || i <= highestReached;
@@ -642,23 +727,24 @@ export default function TurkishLesson1Page() {
                   key={label}
                   onClick={() => clickable && jumpToSection(i)}
                   disabled={!clickable}
-                  className={`flex items-center gap-1 text-[10px] transition-colors ${
+                  className={`flex items-center justify-center gap-1 rounded-md px-2 py-1 text-xs whitespace-nowrap transition-colors focus:outline-none ${
                     clickable ? "cursor-pointer hover:text-primary" : "cursor-default"
                   } ${
                     completed
                       ? "text-primary"
                       : active
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground/50"
+                      ? "text-foreground font-semibold"
+                      : "text-muted-foreground"
                   }`}
                 >
-                  {(reviewMode || completed) ? (
+                  {reviewMode || completed ? (
                     <CheckCircle2 className="h-3 w-3" />
                   ) : null}
-                  <span className="hidden sm:inline">{label}</span>
+                  <span>{label}</span>
                 </button>
               );
             })}
+            </div>
           </div>
         </motion.div>
       )}
@@ -740,8 +826,10 @@ export default function TurkishLesson1Page() {
             </div>
             <div className="space-y-3">
               {keySentences.map((s) => {
-                const id = `sentence-${s.turkish}`;
-                const isPlaying = playingId === id;
+                const questionId = `sentence-q-${s.turkish}`;
+                const answerId = `sentence-a-${s.turkish}`;
+                const isQuestionPlaying = playingId === questionId;
+                const isAnswerPlaying = playingId === answerId;
                 return (
                   <div
                     key={s.turkish}
@@ -754,9 +842,9 @@ export default function TurkishLesson1Page() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleSpeak(id, `${s.turkish}. ${s.english}`, "tr-TR")}
+                        onClick={() => handleSpeak(questionId, s.turkish, "tr-TR")}
                         className={`shrink-0 mt-0.5 rounded-full p-1.5 transition-colors ${
-                          isPlaying
+                          isQuestionPlaying
                             ? "text-primary bg-primary/10"
                             : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                         }`}
@@ -765,7 +853,27 @@ export default function TurkishLesson1Page() {
                         <Volume2 className="h-4 w-4" />
                       </button>
                     </div>
-                    {isPlaying && (
+
+                    <div className="mt-3 border-t pt-3 flex items-start justify-between gap-3 relative z-10">
+                      <div>
+                        <p className="font-medium text-foreground">{s.answerTurkish}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{s.answerEnglish}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSpeak(answerId, s.answerTurkish, "tr-TR")}
+                        className={`shrink-0 mt-0.5 rounded-full p-1.5 transition-colors ${
+                          isAnswerPlaying
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                        }`}
+                        title={`Listen: ${s.answerTurkish}`}
+                      >
+                        <Volume2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {(isQuestionPlaying || isAnswerPlaying) && (
                       <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
                         <div
                           className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
