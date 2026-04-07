@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import sdk from "microsoft-cognitiveservices-speech-sdk";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -13,33 +14,71 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "text is required" }, { status: 400 });
     }
 
-    const isTurkish = lang === "tr-TR";
+    if (lang === "sr-RS") {
+      const speechConfig = sdk.SpeechConfig.fromSubscription(
+        process.env.AZURE_SPEECH_KEY!,
+        process.env.AZURE_SPEECH_REGION!
+      );
 
-    const instructions = isTurkish
-      ? "Speak clearly in Turkish with a natural, friendly tone. Pronounce each word carefully for a language learner. Moderate pace."
-      : "Speak clearly in English with a natural, friendly tone. Moderate pace.";
+      speechConfig.speechSynthesisLanguage = "sr-RS";
+      speechConfig.speechSynthesisVoiceName = "Nicholas";
+      const synthesizer = new sdk.SpeechSynthesizer(speechConfig, null);
 
-    const mp3 = await openai.audio.speech.create({
+      const audioBuffer: Buffer = await new Promise((resolve, reject) => {
+        synthesizer.speakTextAsync(
+          text,
+          (res) => {
+            synthesizer.close();
+            resolve(Buffer.from(res.audioData));
+          },
+          (err) => {
+            synthesizer.close();
+            reject(err);
+          }
+        );
+      });
+
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(audioBuffer);
+          controller.close();
+        },
+      });
+
+      return new NextResponse(stream, {
+        status: 200,
+        headers: {
+          "Content-Type": "audio/mpeg",
+        },
+      });
+    }
+
+    // 2. Turkish + English → OpenAI TTS
+    const voice =
+      lang === "tr-TR"
+        ? "shimmer"
+        : "alloy";
+
+    const response = await openai.audio.speech.create({
       model: "gpt-4o-mini-tts",
-      voice: "shimmer",
+      voice,
       input: text,
-      instructions,
       response_format: "mp3",
     });
 
-    const buffer = Buffer.from(await mp3.arrayBuffer());
+    const buffer = Buffer.from(await response.arrayBuffer());
 
     return new NextResponse(buffer, {
       status: 200,
       headers: {
         "Content-Type": "audio/mpeg",
-        "Cache-Control": "public, max-age=86400",
       },
     });
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "TTS generation failed";
-    console.error("TTS error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch (error: any) {
+    console.error("TTS error:", error);
+    return NextResponse.json(
+      { error: error.message || "TTS failed" },
+      { status: 500 }
+    );
   }
 }
