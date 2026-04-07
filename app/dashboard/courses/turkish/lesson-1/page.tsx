@@ -17,14 +17,86 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-import { useUserProfile } from "@/app/context/UserProfileContext";
-import { saveLessonProgress } from "@/app/lib/userProfileService";
-import { auth } from "@/app/lib/firebase-config";
-
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
+
+let currentAudio: HTMLAudioElement | null = null;
+let onSpeakEnd: (() => void) | null = null;
+let currentAbort: AbortController | null = null;
+
+async function speak(
+  text: string,
+  lang: "tr-TR" | "en-US" = "tr-TR",
+  onEnd?: () => void
+): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  if (currentAbort) {
+    currentAbort.abort();
+    currentAbort = null;
+  }
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  if (onSpeakEnd) {
+    onSpeakEnd();
+    onSpeakEnd = null;
+  }
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+
+  onSpeakEnd = onEnd || null;
+  const abort = new AbortController();
+  currentAbort = abort;
+
+  try {
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, lang }),
+      signal: abort.signal,
+    });
+
+    if (abort.signal.aborted) return;
+    if (!res.ok) throw new Error("TTS request failed");
+
+    const blob = await res.blob();
+    if (abort.signal.aborted) return;
+
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    currentAudio = audio;
+
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      currentAudio = null;
+      if (onSpeakEnd) {
+        onSpeakEnd();
+        onSpeakEnd = null;
+      }
+    };
+    await audio.play();
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") return;
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = lang;
+      utterance.rate = 0.9;
+      utterance.onend = () => {
+        if (onSpeakEnd) {
+          onSpeakEnd();
+          onSpeakEnd = null;
+        }
+      };
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+}
 
 const vocabulary = [
   { turkish: "Havalimanı", english: "Airport" },
@@ -40,12 +112,42 @@ const vocabulary = [
 ];
 
 const keySentences = [
-  { turkish: "Uçuşum saat kaçta?", english: "What time is my flight?" },
-  { turkish: "Bu benim pasaportum.", english: "This is my passport." },
-  { turkish: "Kapı nerede?", english: "Where is the gate?" },
-  { turkish: "Bavulumu teslim etmek istiyorum.", english: "I want to check my suitcase." },
-  { turkish: "Uçuş gecikti mi?", english: "Is the flight delayed?" },
-  { turkish: "Uçağa ne zaman bineceğiz?", english: "When will we board the plane?" },
+  {
+    turkish: "Uçuşum saat kaçta?",
+    english: "What time is my flight?",
+    answerTurkish: "Uçuşunuz saat üçte.",
+    answerEnglish: "Your flight is at three o'clock.",
+  },
+  {
+    turkish: "Bu benim pasaportum.",
+    english: "This is my passport.",
+    answerTurkish: "Teşekkürler, pasaportunuz geçerli.",
+    answerEnglish: "Thank you, your passport is valid.",
+  },
+  {
+    turkish: "Kapı nerede?",
+    english: "Where is the gate?",
+    answerTurkish: "Kapı 12, düz gidip sağa dönün.",
+    answerEnglish: "Gate 12, go straight and turn right.",
+  },
+  {
+    turkish: "Bavulumu teslim etmek istiyorum.",
+    english: "I want to check my suitcase.",
+    answerTurkish: "Tabii, lütfen bavulunuzu tartıya koyun.",
+    answerEnglish: "Of course, please put your suitcase on the scale.",
+  },
+  {
+    turkish: "Uçuş gecikti mi?",
+    english: "Is the flight delayed?",
+    answerTurkish: "Evet, uçuş yaklaşık otuz dakika gecikti.",
+    answerEnglish: "Yes, the flight is delayed by about thirty minutes.",
+  },
+  {
+    turkish: "Uçağa ne zaman bineceğiz?",
+    english: "When will we board the plane?",
+    answerTurkish: "Biniş on beş dakika içinde başlayacak.",
+    answerEnglish: "Boarding will begin in fifteen minutes.",
+  },
 ];
 
 const dialogue = [
@@ -59,6 +161,59 @@ const dialogue = [
   { speaker: "You", text: "Teşekkür ederim. Kapı nerede?", english: "Thank you. Where is the gate?" },
   { speaker: "Staff", text: "Düz gidin ve sağa dönün.", english: "Go straight and turn right." },
   { speaker: "You", text: "Tamam, teşekkürler!", english: "Okay, thanks!" },
+];
+
+const listeningQuestions = [
+  {
+    prompt: "Pasaportunuz lütfen.",
+    promptEnglish: "Your passport please.",
+    options: [
+      { text: "Buyurun.", english: "Here you go." },
+      { text: "Kapı nerede?", english: "Where is the gate?" },
+      { text: "Teşekkürler.", english: "Thanks." },
+    ],
+    correct: 0,
+  },
+  {
+    prompt: "Biletiniz var mı?",
+    promptEnglish: "Do you have your ticket?",
+    options: [
+      { text: "Bavulumu teslim etmek istiyorum.", english: "I want to check my suitcase." },
+      { text: "Evet, işte biletim.", english: "Yes, here is my ticket." },
+      { text: "Merhaba.", english: "Hello." },
+    ],
+    correct: 1,
+  },
+  {
+    prompt: "Kapı nerede?",
+    promptEnglish: "Where is the gate?",
+    options: [
+      { text: "Teşekkür ederim.", english: "Thank you." },
+      { text: "Evet, bir bavulum var.", english: "Yes, I have a suitcase." },
+      { text: "Düz gidin ve sağa dönün.", english: "Go straight and turn right." },
+    ],
+    correct: 2,
+  },
+  {
+    prompt: "Bavulunuz var mı?",
+    promptEnglish: "Do you have a suitcase?",
+    options: [
+      { text: "Evet, bir bavulum ve bir el bagajım var.", english: "Yes, I have one suitcase and one hand luggage." },
+      { text: "İstanbul'a uçuyorum.", english: "I am flying to Istanbul." },
+      { text: "Biletim yok.", english: "I don't have a ticket." },
+    ],
+    correct: 0,
+  },
+  {
+    prompt: "Uçuşum saat kaçta?",
+    promptEnglish: "What time is my flight?",
+    options: [
+      { text: "Kapı numarası 12.", english: "Gate number 12." },
+      { text: "Saat üçte.", english: "At three o'clock." },
+      { text: "Havalimanı çok büyük.", english: "The airport is very big." },
+    ],
+    correct: 1,
+  },
 ];
 
 const quizQuestions = [
@@ -105,9 +260,8 @@ const quizQuestions = [
 ];
 
 const PASSING_PERCENT = 80;
-const COURSE_NAME = "Turkish";
-const LESSON_ID = 1;
-
+const QUIZ_ATTEMPTS_KEY = "bllp-turkish-lesson-1-attempts";
+const LISTENING_ATTEMPTS_KEY = "bllp-turkish-lesson-1-listening-attempts";
 
 interface QuizAttempt {
   score: number;
@@ -116,8 +270,26 @@ interface QuizAttempt {
   date: string;
 }
 
+function loadAttempts(): QuizAttempt[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(QUIZ_ATTEMPTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
+function loadListeningCompletedDate(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(LISTENING_ATTEMPTS_KEY);
+  } catch {
+    return null;
+  }
+}
 
+const STORAGE_KEY = "bllp-turkish-lesson-1";
 
 const sectionLabels = [
   "Vocabulary",
@@ -128,6 +300,15 @@ const sectionLabels = [
   "Quiz",
 ];
 
+function loadProgress(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? parseInt(raw, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
 
 const aiPrompts = [
   {
@@ -164,6 +345,24 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
   const [showHint, setShowHint] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [playingAiId, setPlayingAiId] = useState<string | null>(null);
+
+  const handleSpeakAi = (id: string, text: string) => {
+    if (playingAiId === id) {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      setPlayingAiId(null);
+      return;
+    }
+
+    setPlayingAiId(id);
+    speak(text, "tr-TR", () => setPlayingAiId(null));
+  };
 
   const startListening = () => {
     const SpeechRecognition =
@@ -246,6 +445,11 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
         <div className="p-5 space-y-4 max-h-[400px] overflow-y-auto">
           {messages.map((msg, i) => (
             <div key={i}>
+              {(() => {
+                const aiId = `ai-roleplay-${i}`;
+                const isAiPlaying = msg.role === "ai" && playingAiId === aiId;
+                return (
+                  <>
               <p
                 className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${
                   msg.role === "you"
@@ -259,13 +463,37 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
                 className={`flex ${msg.role === "you" ? "justify-end" : ""}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
+                  className={`relative overflow-hidden max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
                     msg.role === "ai"
                       ? "bg-muted text-foreground"
                       : "bg-primary text-primary-foreground"
                   }`}
                 >
-                  {msg.text}
+                  <div className="relative z-10 flex items-center justify-between gap-2">
+                    <span className="break-words">{msg.text}</span>
+                    {msg.role === "ai" && (
+                      <button
+                        type="button"
+                        onClick={() => handleSpeakAi(aiId, msg.text)}
+                        className={`shrink-0 rounded-full p-1 transition-colors ${
+                          isAiPlaying
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                        }`}
+                        title={`Listen: ${msg.text}`}
+                      >
+                        <Volume2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {isAiPlaying && (
+                    <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
+                      <div
+                        className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+                        style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               {msg.english && (
@@ -277,6 +505,9 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
                   {msg.english}
                 </p>
               )}
+                  </>
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -350,52 +581,72 @@ export default function TurkishLesson1Page() {
   const [currentSection, setCurrentSection] = useState(0);
   const [highestReached, setHighestReached] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
+  const [playingId, setPlayingId] = useState<string | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<(number | null)[]>(
     Array(quizQuestions.length).fill(null)
   );
   const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [quizPaused, setQuizPaused] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
-
-  const { profile, refreshProfile } = useUserProfile();
+  const [listeningStarted, setListeningStarted] = useState(false);
+  const [listeningStep, setListeningStep] = useState(0);
+  const [listeningSelected, setListeningSelected] = useState<number | null>(null);
+  const [listeningLocked, setListeningLocked] = useState(false);
+  const [listeningDone, setListeningDone] = useState(false);
+  const [listeningScore, setListeningScore] = useState(0);
+  const [listeningRevealed, setListeningRevealed] = useState<Set<number>>(new Set());
+  const [listeningCompletedDate, setListeningCompletedDate] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profile) return;
-
-    const courseProgress = profile.courseProgress.find(
-      (c) => c.courseName === COURSE_NAME
-    );
-    const lessonProgress = courseProgress?.lessons.find(
-      (l) => l.lessonId === LESSON_ID
-    );
-    const saved = lessonProgress?.sectionsComplete ?? 0;
+    const saved = loadProgress();
     const completed = saved >= sectionLabels.length;
-
     setHighestReached(saved);
     setCurrentSection(completed ? 0 : saved);
     setReviewMode(completed);
+    setAttempts(loadAttempts());
     setMounted(true);
-  }, [profile]);
+  }, []);
 
   const started = true;
 
   useEffect(() => {
     if (!mounted) return;
-    if(!reviewMode && currentSection > highestReached) {
+    if (!reviewMode && currentSection > highestReached) {
       setHighestReached(currentSection);
-      const uid = auth.currentUser?.uid;
-      if (uid) {
-        saveLessonProgress(uid, COURSE_NAME, LESSON_ID, currentSection);
-      }
+      localStorage.setItem(STORAGE_KEY, String(currentSection));
     }
-  }, [currentSection, reviewMode, highestReached, mounted]);
+  }, [currentSection, highestReached, reviewMode, mounted]);
 
   if (!mounted) return null;
 
   const jumpToSection = (index: number) => {
     setCurrentSection(index);
     setQuizSubmitted(false);
+    setQuizStarted(false);
+    setQuizPaused(false);
+    setShowCancelConfirm(false);
     setQuizAnswers(Array(quizQuestions.length).fill(null));
+    setListeningStarted(false);
+    setListeningStep(0);
+    setListeningSelected(null);
+    setListeningLocked(false);
+    setListeningDone(false);
+    setListeningScore(0);
+    setListeningRevealed(new Set());
+    setListeningCompletedDate(loadListeningCompletedDate());
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSpeak = (id: string, text: string, lang: "tr-TR" | "en-US" = "tr-TR") => {
+    if (playingId === id) {
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      setPlayingId(null);
+      return;
+    }
+    setPlayingId(id);
+    speak(text, lang, () => setPlayingId(null));
   };
 
   const handleNext = () => {
@@ -408,8 +659,11 @@ export default function TurkishLesson1Page() {
     (a, i) => a === quizQuestions[i].correct
   ).length;
 
+  const progressStep = reviewMode || quizSubmitted
+    ? sectionLabels.length
+    : currentSection + 1;
   const progressPercent = Math.round(
-    ((Math.max(highestReached, currentSection) + (quizSubmitted ? 1 : 0)) / sectionLabels.length) * 100
+    (progressStep / sectionLabels.length) * 100
   );
 
   return (
@@ -448,7 +702,7 @@ export default function TurkishLesson1Page() {
         >
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
             <span>{sectionLabels[Math.min(currentSection, sectionLabels.length - 1)]}</span>
-            <span>{reviewMode ? "Completed — Review Mode" : `${progressPercent}% complete`}</span>
+            {reviewMode ? <span>Completed — Review Mode</span> : null}
           </div>
           <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
             <motion.div
@@ -458,10 +712,12 @@ export default function TurkishLesson1Page() {
               transition={{ duration: 0.4 }}
             />
           </div>
-          <div className="flex justify-between mt-2">
+          <div className="mt-2 overflow-x-auto">
+            <div className="flex min-w-max items-center justify-between gap-2">
             {sectionLabels.map((label, i) => {
               const completed =
-                i < highestReached ||
+                reviewMode ||
+                i < currentSection ||
                 (i === sectionLabels.length - 1 && quizSubmitted);
               const active = i === currentSection;
               const clickable = reviewMode || i <= highestReached;
@@ -471,23 +727,24 @@ export default function TurkishLesson1Page() {
                   key={label}
                   onClick={() => clickable && jumpToSection(i)}
                   disabled={!clickable}
-                  className={`flex items-center gap-1 text-[10px] transition-colors ${
+                  className={`flex items-center justify-center gap-1 rounded-md px-2 py-1 text-xs whitespace-nowrap transition-colors focus:outline-none ${
                     clickable ? "cursor-pointer hover:text-primary" : "cursor-default"
                   } ${
                     completed
                       ? "text-primary"
                       : active
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground/50"
+                      ? "text-foreground font-semibold"
+                      : "text-muted-foreground"
                   }`}
                 >
-                  {(reviewMode || completed) ? (
+                  {reviewMode || completed ? (
                     <CheckCircle2 className="h-3 w-3" />
                   ) : null}
-                  <span className="hidden sm:inline">{label}</span>
+                  <span>{label}</span>
                 </button>
               );
             })}
+            </div>
           </div>
         </motion.div>
       )}
@@ -508,18 +765,43 @@ export default function TurkishLesson1Page() {
               <h2 className="text-lg font-semibold">Vocabulary</h2>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
-              {vocabulary.map((word) => (
-                <div
-                  key={word.turkish}
-                  className="flex items-center justify-between rounded-lg border bg-card px-4 py-3 shadow-sm"
-                >
-                  <div>
-                    <span className="font-semibold text-foreground">{word.turkish}</span>
-                    <span className="ml-2 text-sm text-muted-foreground">– {word.english}</span>
+              {vocabulary.map((word) => {
+                const id = `vocab-${word.turkish}`;
+                const isPlaying = playingId === id;
+                return (
+                  <div
+                    key={word.turkish}
+                    className="relative overflow-hidden rounded-lg border bg-card px-4 py-3 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between relative z-10">
+                      <div>
+                        <span className="font-semibold text-foreground">{word.turkish}</span>
+                        <span className="ml-2 text-sm text-muted-foreground">– {word.english}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSpeak(id, `${word.turkish}. ${word.english}`, "tr-TR")}
+                        className={`shrink-0 rounded-full p-1.5 transition-colors ${
+                          isPlaying
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                        }`}
+                        title={`Listen: ${word.turkish}`}
+                      >
+                        <Volume2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {isPlaying && (
+                      <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
+                        <div
+                          className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+                          style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
+                        />
+                      </div>
+                    )}
                   </div>
-                  <Volume2 className="h-4 w-4 shrink-0 cursor-pointer text-muted-foreground hover:text-primary" />
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-6 flex justify-end">
               <Button onClick={handleNext}>
@@ -543,12 +825,65 @@ export default function TurkishLesson1Page() {
               <h2 className="text-lg font-semibold">Key Sentences</h2>
             </div>
             <div className="space-y-3">
-              {keySentences.map((s) => (
-                <div key={s.turkish} className="rounded-lg border bg-card px-4 py-3 shadow-sm">
-                  <p className="font-medium text-foreground">{s.turkish}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{s.english}</p>
-                </div>
-              ))}
+              {keySentences.map((s) => {
+                const questionId = `sentence-q-${s.turkish}`;
+                const answerId = `sentence-a-${s.turkish}`;
+                const isQuestionPlaying = playingId === questionId;
+                const isAnswerPlaying = playingId === answerId;
+                return (
+                  <div
+                    key={s.turkish}
+                    className="relative overflow-hidden rounded-lg border bg-card px-4 py-3 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3 relative z-10">
+                      <div>
+                        <p className="font-medium text-foreground">{s.turkish}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{s.english}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSpeak(questionId, s.turkish, "tr-TR")}
+                        className={`shrink-0 mt-0.5 rounded-full p-1.5 transition-colors ${
+                          isQuestionPlaying
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                        }`}
+                        title={`Listen: ${s.turkish}`}
+                      >
+                        <Volume2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="mt-3 border-t pt-3 flex items-start justify-between gap-3 relative z-10">
+                      <div>
+                        <p className="font-medium text-foreground">{s.answerTurkish}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{s.answerEnglish}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSpeak(answerId, s.answerTurkish, "tr-TR")}
+                        className={`shrink-0 mt-0.5 rounded-full p-1.5 transition-colors ${
+                          isAnswerPlaying
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                        }`}
+                        title={`Listen: ${s.answerTurkish}`}
+                      >
+                        <Volume2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {(isQuestionPlaying || isAnswerPlaying) && (
+                      <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
+                        <div
+                          className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+                          style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <div className="mt-6 flex justify-end">
               <Button onClick={handleNext}>
@@ -569,33 +904,62 @@ export default function TurkishLesson1Page() {
           >
             <h2 className="text-lg font-semibold mb-4">Mini Dialogue – Beginner Level</h2>
             <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
-              {dialogue.map((line, i) => (
-                <div key={i}>
-                  <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${
-                    line.speaker === "You" ? "text-right text-primary" : "text-muted-foreground"
-                  }`}>
-                    {line.speaker}
-                  </p>
-                  <div className={`flex gap-3 ${line.speaker === "You" ? "justify-end" : ""}`}>
-                    <div
-                      className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
-                        line.speaker === "Staff"
-                          ? "bg-muted text-foreground"
-                          : "bg-primary text-primary-foreground"
+              {dialogue.map((line, i) => {
+                const dlgId = `dialogue-${i}`;
+                const isPlaying = playingId === dlgId;
+                const isYou = line.speaker === "You";
+                return (
+                  <div key={i}>
+                    <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${
+                      isYou ? "text-right text-primary" : "text-muted-foreground"
+                    }`}>
+                      {line.speaker}
+                    </p>
+                    <div className={`flex ${isYou ? "justify-end" : ""}`}>
+                      <div
+                        className={`relative overflow-hidden max-w-[80%] rounded-xl px-4 py-2.5 text-sm cursor-pointer ${
+                          line.speaker === "Staff"
+                            ? "bg-muted text-foreground"
+                            : "bg-primary text-primary-foreground"
+                        }`}
+                        onClick={() => handleSpeak(dlgId, line.text, "tr-TR")}
+                      >
+                        <div className="flex items-center gap-2 relative z-10">
+                          <span>{line.text}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleSpeak(dlgId, line.text, "tr-TR"); }}
+                            className={`shrink-0 rounded-full p-1 transition-colors ${
+                              isPlaying
+                                ? isYou ? "text-primary-foreground/90 bg-white/20" : "text-primary bg-primary/10"
+                                : isYou ? "text-primary-foreground/60 hover:text-primary-foreground/90" : "text-muted-foreground hover:text-primary"
+                            }`}
+                          >
+                            <Volume2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        {isPlaying && (
+                          <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
+                            <div
+                              className={`h-full w-full bg-gradient-to-r from-transparent to-transparent ${
+                                isYou ? "via-white/70" : "via-primary/40"
+                              }`}
+                              style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p
+                      className={`mt-1 text-xs text-muted-foreground/70 italic ${
+                        isYou ? "text-right pr-1" : "pl-1"
                       }`}
                     >
-                      {line.text}
-                    </div>
+                      {line.english}
+                    </p>
                   </div>
-                  <p
-                    className={`mt-1 text-xs text-muted-foreground/70 italic ${
-                      line.speaker === "You" ? "text-right pr-1" : "pl-1"
-                    }`}
-                  >
-                    {line.english}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-6 flex justify-end">
               <Button onClick={handleNext}>
@@ -618,32 +982,263 @@ export default function TurkishLesson1Page() {
               <Headphones className="h-5 w-5 text-amber-500" />
               <h2 className="text-lg font-semibold">Listening Practice</h2>
             </div>
-            <div className="rounded-xl border bg-card p-5 shadow-sm">
-              <p className="text-sm text-muted-foreground mb-3">
-                Listen and respond with the correct phrase:
-              </p>
-              <div className="rounded-lg bg-muted px-4 py-3 mb-3">
-                <p className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Volume2 className="h-4 w-4 text-primary" />
-                  &ldquo;Pasaportunuz lütfen.&rdquo;
+
+            {!listeningStarted && !listeningDone && (
+              <div className="rounded-xl border bg-card p-8 shadow-sm text-center">
+                <Headphones className="h-14 w-14 mx-auto mb-4 text-amber-500" />
+                <h3 className="font-display text-2xl font-bold mb-2">
+                  {listeningCompletedDate ? "Practice Again?" : "Ready to Practice Listening?"}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {listeningQuestions.length} questions &middot; Listen and pick the correct response
                 </p>
+                <p className="text-sm text-muted-foreground mb-6">
+                  You can keep trying each question until you get it right.
+                </p>
+                {listeningCompletedDate && (
+                  <p className="text-xs text-muted-foreground mb-6">
+                    Last completed: {listeningCompletedDate}
+                  </p>
+                )}
+                <Button
+                  size="lg"
+                  onClick={() => {
+                    setListeningStarted(true);
+                    setListeningStep(0);
+                    setListeningSelected(null);
+                    setListeningLocked(false);
+                    setListeningScore(0);
+                    setListeningRevealed(new Set());
+                  }}
+                >
+                  {listeningCompletedDate ? "Restart Practice" : "Start Practice"}
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
               </div>
-              <p className="text-sm text-muted-foreground mb-1">Your response:</p>
-              <div className="flex flex-wrap gap-2">
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
-                  &ldquo;Buyurun.&rdquo;
+            )}
+
+            {listeningStarted && !listeningDone ? (() => {
+              const q = listeningQuestions[listeningStep];
+              const promptId = `listen-prompt-${listeningStep}`;
+              const isPromptPlaying = playingId === promptId;
+
+              return (
+                <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Question {listeningStep + 1} of {listeningQuestions.length}
+                    </p>
+                  </div>
+
+                  <div className="w-full bg-muted rounded-full h-1.5 mb-1">
+                    <div
+                      className="h-1.5 rounded-full bg-primary transition-all duration-500"
+                      style={{ width: `${((listeningStep) / listeningQuestions.length) * 100}%` }}
+                    />
+                  </div>
+
+                  <p className="text-sm text-muted-foreground">
+                    Listen and respond with the correct phrase:
+                  </p>
+
+                  <div
+                    className="relative overflow-hidden rounded-lg bg-muted px-4 py-3 cursor-pointer hover:bg-muted/80 transition-colors"
+                    onClick={() => handleSpeak(promptId, q.prompt, "tr-TR")}
+                  >
+                    <div className="flex items-center gap-3 relative z-10">
+                      <button
+                        type="button"
+                        className={`shrink-0 rounded-full p-2 transition-colors ${
+                          isPromptPlaying
+                            ? "text-primary bg-primary/10"
+                            : "text-primary hover:bg-primary/10"
+                        }`}
+                      >
+                        <Volume2 className="h-5 w-5" />
+                      </button>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          &ldquo;{q.prompt}&rdquo;
+                        </p>
+                        <p className="text-xs text-muted-foreground/70 italic mt-0.5">
+                          {q.promptEnglish}
+                        </p>
+                      </div>
+                    </div>
+                    {isPromptPlaying && (
+                      <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
+                        <div
+                          className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+                          style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-sm text-muted-foreground">Your response:</p>
+
+                  <div className="space-y-2">
+                    {q.options.map((opt, oi) => {
+                      const optId = `listen-opt-${listeningStep}-${oi}`;
+                      const isOptPlaying = playingId === optId;
+                      const isCorrect = oi === q.correct;
+                      const isSelected = listeningSelected === oi;
+                      const wasWrong = isSelected && !isCorrect && !listeningLocked;
+                      const isRevealed = listeningRevealed.has(oi);
+
+                      let btnClass =
+                        "w-full text-left rounded-lg border px-4 py-3 text-sm font-medium transition-all duration-300 relative overflow-hidden";
+
+                      if (listeningLocked && isCorrect) {
+                        btnClass += " border-emerald-400 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-300";
+                      } else if (wasWrong) {
+                        btnClass += " border-red-300 bg-red-50 text-red-600 animate-[shake_0.4s_ease-in-out]";
+                      } else if (listeningLocked) {
+                        btnClass += " border-muted bg-muted/30 text-muted-foreground opacity-60";
+                      } else {
+                        btnClass +=
+                          " border-border bg-card text-foreground hover:border-primary/40 hover:bg-primary/5 cursor-pointer active:scale-[0.98]";
+                      }
+
+                      return (
+                        <div key={oi} className="relative">
+                          <button
+                            type="button"
+                            disabled={listeningLocked}
+                            className={btnClass}
+                            onClick={() => {
+                              if (listeningLocked) return;
+                              setListeningSelected(oi);
+                              setListeningRevealed((prev) => new Set(prev).add(oi));
+                              handleSpeak(optId, opt.text, "tr-TR");
+                              if (isCorrect) {
+                                setListeningLocked(true);
+                                setListeningScore((s) => s + 1);
+                              } else {
+                                setTimeout(() => setListeningSelected(null), 3000);
+                              }
+                            }}
+                          >
+                            <div className="flex flex-col gap-0.5 relative z-10 pr-8">
+                              <span>&ldquo;{opt.text}&rdquo;</span>
+                              {isRevealed && (
+                                <span className="text-xs text-muted-foreground/70 italic">
+                                  {opt.english}
+                                </span>
+                              )}
+                            </div>
+                            {listeningLocked && isCorrect && (
+                              <span className="absolute right-10 top-1/2 -translate-y-1/2 text-emerald-500 text-lg">
+                                ✓
+                              </span>
+                            )}
+                            {wasWrong && (
+                              <span className="absolute right-10 top-1/2 -translate-y-1/2 text-red-400 text-lg">
+                                ✗
+                              </span>
+                            )}
+                            {isOptPlaying && (
+                              <div className="absolute bottom-0 left-0 w-full h-0.5 overflow-hidden">
+                                <div
+                                  className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+                                  style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
+                                />
+                              </div>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setListeningRevealed((prev) => new Set(prev).add(oi));
+                              handleSpeak(optId, opt.text, "tr-TR");
+                            }}
+                            className={`absolute right-2 top-1/2 -translate-y-1/2 z-20 shrink-0 rounded-full p-1.5 transition-colors ${
+                              isOptPlaying
+                                ? "text-primary bg-primary/10"
+                                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                            }`}
+                          >
+                            <Volume2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {listeningSelected !== null && !listeningLocked && (
+                    <p className="text-sm font-medium text-red-500 text-center animate-pulse">
+                      Not quite right — try again!
+                    </p>
+                  )}
+
+                  {listeningLocked && (
+                    <div className="space-y-2 pt-2">
+                      <p className="text-sm font-medium text-emerald-600 text-center">
+                        Correct! Well done.
+                      </p>
+                      <div className="flex justify-end">
+                        <Button
+                          onClick={() => {
+                            const next = listeningStep + 1;
+                            if (next >= listeningQuestions.length) {
+                              const completedDate = new Date().toLocaleString();
+                              localStorage.setItem(LISTENING_ATTEMPTS_KEY, completedDate);
+                              setListeningCompletedDate(completedDate);
+                              setListeningDone(true);
+                            } else {
+                              setListeningStep(next);
+                              setListeningSelected(null);
+                              setListeningLocked(false);
+                              setListeningRevealed(new Set());
+                            }
+                          }}
+                        >
+                          {listeningStep + 1 < listeningQuestions.length ? "Next Question" : "See Results"}{" "}
+                          <ChevronRight className="ml-1 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <span className="text-sm text-muted-foreground self-center">or</span>
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
-                  &ldquo;İşte pasaportum.&rdquo;
+              );
+            })() : null}
+
+            {listeningDone && (
+              <div className="rounded-xl border bg-card p-6 shadow-sm text-center space-y-4">
+                <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto">
+                  <Headphones className="h-8 w-8" />
+                </div>
+                <h3 className="text-lg font-semibold">Listening Practice Complete!</h3>
+                <p className="text-sm text-muted-foreground">
+                  Great job! You completed all the listening exercises.
+                </p>
+
+                {listeningCompletedDate && (
+                  <p className="text-xs text-muted-foreground">
+                    Last completed: {listeningCompletedDate}
+                  </p>
+                )}
+
+                <div className="flex justify-center gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setListeningStep(0);
+                      setListeningSelected(null);
+                      setListeningLocked(false);
+                      setListeningDone(false);
+                      setListeningScore(0);
+                      setListeningRevealed(new Set());
+                    }}
+                  >
+                    Try Again
+                  </Button>
+                  <Button onClick={handleNext}>
+                    Continue <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-            </div>
-            <div className="mt-6 flex justify-end">
-              <Button onClick={handleNext}>
-                Continue <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
+            )}
           </motion.section>
         )}
 
@@ -666,16 +1261,168 @@ export default function TurkishLesson1Page() {
               <h2 className="text-lg font-semibold">Lesson Quiz</h2>
             </div>
 
-            {!quizSubmitted ? (
+            {/* Quiz Intro Screen */}
+            {!quizStarted && !quizSubmitted && (
+              <motion.div variants={fadeUp} initial="hidden" animate="show">
+                <div className="rounded-xl border bg-card p-8 shadow-sm text-center">
+                  <Trophy className="h-14 w-14 mx-auto mb-4 text-amber-500" />
+
+                  {quizPaused ? (
+                    <>
+                      <h3 className="font-display text-2xl font-bold mb-2">
+                        Quiz Paused
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Your progress has been saved.
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-8">
+                        {quizAnswers.filter((a) => a !== null).length} of {quizQuestions.length} questions answered so far.
+                      </p>
+                    </>
+                  ) : attempts.length === 0 ? (
+                    <>
+                      <h3 className="font-display text-2xl font-bold mb-2">
+                        Ready to Test Your Knowledge?
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {quizQuestions.length} questions &middot; {PASSING_PERCENT}% required to pass
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-8">
+                        Answer questions about vocabulary, phrases, and dialogues from this lesson.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="font-display text-2xl font-bold mb-2">
+                        Retake the Quiz?
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-6">
+                        {quizQuestions.length} questions &middot; {PASSING_PERCENT}% required to pass
+                      </p>
+                    </>
+                  )}
+
+                  {attempts.length > 0 && (
+                    <div className="text-left max-w-md mx-auto mb-8">
+                      <h4 className="text-sm font-semibold mb-2">
+                        Previous Attempts ({attempts.length})
+                      </h4>
+                      <div className="space-y-1.5">
+                        {attempts.map((a, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs"
+                          >
+                            <span className="text-muted-foreground">
+                              Attempt {attempts.length - i}
+                            </span>
+                            <span className="font-medium">
+                              {a.score}/{a.total}
+                            </span>
+                            <span
+                              className={`font-semibold ${
+                                a.passed ? "text-emerald-600" : "text-red-500"
+                              }`}
+                            >
+                              {a.passed ? "Passed" : "Failed"}
+                            </span>
+                            <span className="text-muted-foreground/60">
+                              {a.date}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {(() => {
+                        const last = attempts[0];
+                        const pct = Math.round((last.score / last.total) * 100);
+                        return (
+                          <div className={`mt-3 rounded-lg px-4 py-3 text-sm ${
+                            last.passed
+                              ? "bg-emerald-50 border border-emerald-200"
+                              : "bg-red-50 border border-red-200"
+                          }`}>
+                            <p className="font-medium">
+                              Last attempt: {last.score}/{last.total} ({pct}%){" "}
+                              <span className={last.passed ? "text-emerald-600" : "text-red-500"}>
+                                {last.passed ? "Passed" : "Failed"}
+                              </span>
+                            </p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 justify-center">
+                    {quizPaused && (
+                      <Button
+                        size="lg"
+                        onClick={() => {
+                          setQuizPaused(false);
+                          setQuizStarted(true);
+                        }}
+                      >
+                        Resume Quiz
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button
+                      size="lg"
+                      variant={quizPaused ? "outline" : "default"}
+                      onClick={() => {
+                        setQuizAnswers(Array(quizQuestions.length).fill(null));
+                        setQuizPaused(false);
+                        setQuizStarted(true);
+                      }}
+                    >
+                      {quizPaused
+                        ? "Start Over"
+                        : attempts.length === 0
+                        ? "Start Quiz"
+                        : "Retake Quiz"}
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Quiz Questions */}
+            {quizStarted && !quizSubmitted && (
               <>
                 <div className="space-y-5">
-                  {quizQuestions.map((q, qi) => (
-                    <div key={qi} className="rounded-xl border bg-card p-5 shadow-sm">
-                      <p className="font-medium text-foreground mb-3">
-                        {qi + 1}. {q.question}
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {q.options.map((opt, oi) => (
+                  {quizQuestions.map((q, qi) => {
+                    const isEnglishOptions = q.question.toLowerCase().startsWith("what does") || q.question.toLowerCase().startsWith("what is");
+                    const qId = `quiz-q-${qi}`;
+                    const isQPlaying = playingId === qId;
+                    return (
+                    <div key={qi} className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
+                      <div className="flex items-start justify-between gap-2 mb-3 relative z-10">
+                        <p className="font-medium text-foreground">
+                          {qi + 1}. {q.question}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSpeak(qId, q.question, "en-US");
+                          }}
+                          className={`shrink-0 mt-0.5 rounded-full p-1.5 transition-colors ${
+                            isQPlaying
+                              ? "text-primary bg-primary/10"
+                              : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                          }`}
+                          title="Listen to question"
+                        >
+                          <Volume2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-2 relative z-10">
+                        {q.options.map((opt, oi) => {
+                          const oId = `quiz-q-${qi}-o-${oi}`;
+                          const isOPlaying = playingId === oId;
+                          return (
                           <button
                             key={oi}
                             onClick={() => {
@@ -683,22 +1430,104 @@ export default function TurkishLesson1Page() {
                               next[qi] = oi;
                               setQuizAnswers(next);
                             }}
-                            className={`rounded-lg border px-4 py-2.5 text-sm text-left transition-all ${
+                            className={`group relative overflow-hidden flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm text-left transition-all ${
                               quizAnswers[qi] === oi
                                 ? "border-primary bg-primary/10 text-primary font-medium"
                                 : "bg-card text-foreground hover:border-primary/30 hover:bg-muted"
                             }`}
                           >
-                            {opt}
+                            <span>{opt}</span>
+                            <span
+                              role="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSpeak(oId, opt, isEnglishOptions ? "en-US" : "tr-TR");
+                              }}
+                              className={`shrink-0 ml-2 rounded-full p-1 transition-colors ${
+                                isOPlaying
+                                  ? "text-primary bg-primary/10 opacity-100"
+                                  : "text-muted-foreground/50 hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100"
+                              }`}
+                              title={`Listen: ${opt}`}
+                            >
+                              <Volume2 className="h-3.5 w-3.5" />
+                            </span>
+                            {isOPlaying && (
+                              <div className="absolute bottom-0 left-0 w-full h-0.5 overflow-hidden">
+                                <div
+                                  className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+                                  style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
+                                />
+                              </div>
+                            )}
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
+                      {isQPlaying && (
+                        <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
+                          <div
+                            className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+                            style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
+                          />
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
-                <div className="mt-6 flex justify-end">
+                {/* Cancel Confirmation */}
+                {showCancelConfirm && (
+                  <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-center">
+                    <p className="text-sm font-medium text-red-700 mb-3">
+                      Are you sure you want to cancel? All your answers will be lost.
+                    </p>
+                    <div className="flex gap-3 justify-center">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowCancelConfirm(false)}
+                      >
+                        Keep Going
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          setQuizAnswers(Array(quizQuestions.length).fill(null));
+                          setQuizStarted(false);
+                          setQuizPaused(false);
+                          setShowCancelConfirm(false);
+                        }}
+                      >
+                        Yes, Cancel Quiz
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-6 flex justify-between">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setQuizPaused(true);
+                        setQuizStarted(false);
+                        setShowCancelConfirm(false);
+                      }}
+                    >
+                      Pause Quiz
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => setShowCancelConfirm(true)}
+                    >
+                      Cancel Quiz
+                    </Button>
+                  </div>
                   <Button
-                    onClick={async () => {
+                    onClick={() => {
                       const s = quizAnswers.filter(
                         (a, i) => a === quizQuestions[i].correct
                       ).length;
@@ -712,14 +1541,17 @@ export default function TurkishLesson1Page() {
                       };
                       const updated = [attempt, ...attempts];
                       setAttempts(updated);
-                      const uid = auth.currentUser?.uid;
-                      if (uid) {
-                        if(passed) {
-                          await saveLessonProgress(uid, COURSE_NAME, LESSON_ID, sectionLabels.length);
-                          await refreshProfile();
-                        }
-                      }
+                      localStorage.setItem(
+                        QUIZ_ATTEMPTS_KEY,
+                        JSON.stringify(updated)
+                      );
                       setQuizSubmitted(true);
+                      if (passed) {
+                        localStorage.setItem(
+                          STORAGE_KEY,
+                          String(sectionLabels.length)
+                        );
+                      }
                     }}
                     disabled={quizAnswers.some((a) => a === null)}
                   >
@@ -727,7 +1559,10 @@ export default function TurkishLesson1Page() {
                   </Button>
                 </div>
               </>
-            ) : (
+            )}
+
+            {/* Quiz Results */}
+            {quizSubmitted && (
               <motion.div variants={fadeUp} initial="hidden" animate="show">
                 <div className="rounded-xl border bg-card p-8 shadow-sm text-center">
                   {(() => {
@@ -761,7 +1596,7 @@ export default function TurkishLesson1Page() {
                           {Math.round(
                             (score / quizQuestions.length) * 100
                           )}
-                          % — {passed ? "Passed" : `${PASSING_PERCENT}% required to pass`}
+                          % {passed ? "Passed" : `${PASSING_PERCENT}% required to pass`}
                         </p>
                       </>
                     );
@@ -834,6 +1669,8 @@ export default function TurkishLesson1Page() {
                       onClick={() => {
                         setQuizAnswers(Array(quizQuestions.length).fill(null));
                         setQuizSubmitted(false);
+                        setQuizStarted(false);
+                        setQuizPaused(false);
                       }}
                     >
                       Retry Quiz

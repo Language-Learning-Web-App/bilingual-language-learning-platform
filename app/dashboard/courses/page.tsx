@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { BookOpen, MoreVertical } from "lucide-react";
@@ -30,7 +30,7 @@ const allCourses: Course[] = [
   { name: "Italian", flag: "🇮🇹", lessons: 15, level: "Beginner" },
   { name: "Portuguese", flag: "🇵🇹", lessons: 15, level: "Beginner" },
   { name: "Serbian", flag: "🇷🇸", lessons: 15, level: "Beginner" },
-  { name: "Mandarin", flag: "🇨🇳", lessons: 15, level: "Beginner" },
+  { name: "Persian", flag: "🇮🇷", lessons: 15, level: "Beginner" },
   { name: "Hindi", flag: "🇮🇳", lessons: 15, level: "Beginner" },
   { name: "Russian", flag: "🇷🇺", lessons: 15, level: "Beginner" },
 ];
@@ -45,7 +45,7 @@ const courseRoutes: Record<string, string> = {
   Italian: "/dashboard/courses/italian",
   Portuguese: "/dashboard/courses/portuguese",
   Serbian: "/dashboard/courses/serbian",
-  Mandarin: "/dashboard/courses/mandarin",
+  Persian: "/dashboard/courses/mandarin",
   Hindi: "/dashboard/courses/hindi",
   Russian: "/dashboard/courses/russian",
 };
@@ -55,15 +55,47 @@ const fadeIn = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
+function slugifyCourse(name: string) {
+  return name.toLowerCase().replace(/\s+/g, "-");
+}
+
+function hasCourseStarted(name: string): boolean {
+  if (typeof window === "undefined") return false;
+  const slug = slugifyCourse(name);
+  const startedKey = `bllp-${slug}-started`;
+
+  if (localStorage.getItem(startedKey) === "true") {
+    return true;
+  }
+
+  const lessonPrefix = `bllp-${slug}-lesson-`;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith(lessonPrefix)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+const SECTIONS_PER_LESSON = 6;
+
 export default function CoursesPage() {
   const router = useRouter();
   const { enrolled, enroll, drop } = useCourses();
 
   const [confirmEnroll, setConfirmEnroll] = useState<string | null>(null);
   const [confirmDrop, setConfirmDrop] = useState<string | null>(null);
+  const [startedCourses, setStartedCourses] = useState<Set<string>>(new Set());
 
   const enrolledCourses = allCourses.filter((c) => enrolled.includes(c.name));
   const browseCourses = allCourses.filter((c) => !enrolled.includes(c.name));
+
+  useEffect(() => {
+    const started = new Set(enrolled.filter((name) => hasCourseStarted(name)));
+    setStartedCourses(started);
+  }, [enrolled]);
 
   const handleEnroll = (name: string) => {
     enroll(name);
@@ -75,11 +107,36 @@ export default function CoursesPage() {
     setConfirmDrop(null);
   };
 
-  // Randomized progress for demo (replace with actual data later)
   const getProgress = (courseName: string, lessons: number) => {
     if (!enrolled.includes(courseName)) return 0;
-    const completed = Math.floor(Math.random() * (lessons + 1));
-    return Math.round((completed / lessons) * 100);
+    if (typeof window === "undefined") return 0;
+
+    const slug = slugifyCourse(courseName);
+    const lessonKeyRegex = new RegExp(`^bllp-${slug}-lesson-(\\d+)$`);
+    let completedSections = 0;
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !lessonKeyRegex.test(key)) continue;
+
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+
+      const sections = Number.parseInt(raw, 10);
+      if (Number.isNaN(sections)) continue;
+
+      completedSections += Math.min(
+        Math.max(sections, 0),
+        SECTIONS_PER_LESSON
+      );
+    }
+
+    const totalSections = lessons * SECTIONS_PER_LESSON;
+    if (totalSections <= 0) return 0;
+
+    return Math.round(
+      (Math.min(completedSections, totalSections) / totalSections) * 100
+    );
   };
 
   return (
@@ -126,6 +183,7 @@ export default function CoursesPage() {
           <h2 className="mb-4 text-lg font-semibold">Enrolled Courses</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {enrolledCourses.map((course) => {
+              const hasStarted = startedCourses.has(course.name);
               const progress = getProgress(course.name, course.lessons);
               return (
                 <motion.div
@@ -159,26 +217,18 @@ export default function CoursesPage() {
                     {course.lessons} lessons &middot; {course.level}
                   </p>
 
-                  {/* Progress Bar */}
-                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-3">
-                    <div
-                      className="h-2 bg-primary rounded-full transition-all duration-700"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 text-right">
-                    {progress}%
-                  </p>
-
                   <Button
                     size="sm"
                     className="mt-4 w-full"
                     onClick={() => {
+                      const slug = slugifyCourse(course.name);
+                      localStorage.setItem(`bllp-${slug}-started`, "true");
+                      setStartedCourses((prev) => new Set(prev).add(course.name));
                       const route = courseRoutes[course.name];
                       if (route) router.push(route);
                     }}
                   >
-                    Continue
+                    {hasStarted ? "Continue" : "Start"}
                   </Button>
                 </motion.div>
               );
