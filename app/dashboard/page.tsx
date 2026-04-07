@@ -1,17 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-import { signOut } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/app/lib/firebase-config";
 
 import { useCourses } from "./courses-context";
 import { formatTime } from "@/app/lib/utils";
-
 import { useUserProfile } from "../context/UserProfileContext";
-
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -23,16 +21,26 @@ const fadeUp = {
 };
 
 export default function DashboardPage() {
-
   const { profile } = useUserProfile();
   const router = useRouter();
-
   const { enrolled, activity } = useCourses();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.replace("/sign-in");
+      } else if (!user.emailVerified) {
+        router.replace("/verify-email");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.replace("/sign-in");
+      window.location.href = "/sign-in"; // stronger redirect
     } catch (err) {
       console.error("Logout failed:", err);
     }
@@ -40,7 +48,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-
       {/* Main Content */}
       <main className="flex-1 p-8">
         <h1 className="font-display text-3xl font-bold tracking-tight mb-8">
@@ -78,15 +85,19 @@ export default function DashboardPage() {
           <h2 className="mb-4 text-lg font-semibold">Recent Activity</h2>
           <div className="space-y-3">
             {activity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No activity yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No activity yet.
+              </p>
             ) : (
               activity.map((entry, i) => (
                 <div
-                  key={i} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {entry.action === "enrolled"
-                        ? `Enrolled in ${entry.course}`
-                        : `Dropped ${entry.course}`}
+                  key={i}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span className="text-muted-foreground">
+                    {entry.action === "enrolled"
+                      ? `Enrolled in ${entry.course}`
+                      : `Dropped ${entry.course}`}
                   </span>
                   <span className="text-xs text-muted-foreground/60">
                     {formatTime(new Date(entry.timestamp))}

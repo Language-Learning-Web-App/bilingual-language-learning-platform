@@ -36,36 +36,26 @@ export default function NotificationsPage() {
     return unsub;
   }, []);
 
-  // Load notifications and merge activity once
+  // Build notifications from activity
   useEffect(() => {
     if (!uid) return;
 
-    // Load saved notifications
-    const saved = localStorage.getItem(`notifications-${uid}`);
-    const savedNotifications: Notification[] = saved ? JSON.parse(saved) : [];
+    const activityNotifications: Notification[] = activity.map((entry, idx) => {
+      const date = new Date(entry.timestamp);
+      return {
+        id: date.getTime() + idx,
+        message:
+          entry.action === "enrolled"
+            ? `Enrolled in ${entry.course}`
+            : `Dropped ${entry.course}`,
+        time: date.toLocaleDateString(),
+        read: false,
+      };
+    });
 
-    // Map activity to notifications
-    const activityNotifications: Notification[] = activity.map((entry, idx) => ({
-      id: entry.timestamp.getTime() + idx,
-      message:
-        entry.action === "enrolled"
-          ? `Enrolled in ${entry.course}`
-          : `Dropped ${entry.course}`,
-      time: entry.timestamp.toLocaleDateString(),
-      read: false,
-    }));
-
-    // Merge and sort by newest
-    const merged = [...activityNotifications, ...savedNotifications].sort((a, b) => b.id - a.id);
-
-    setNotifications(merged);
+    const sorted = [...activityNotifications].sort((a, b) => b.id - a.id);
+    setNotifications(sorted);
   }, [uid, activity]);
-
-  // Save notifications whenever they change
-  useEffect(() => {
-    if (!uid) return;
-    localStorage.setItem(`notifications-${uid}`, JSON.stringify(notifications));
-  }, [notifications, uid]);
 
   const markAsRead = (id: number) =>
     setNotifications((prev) =>
