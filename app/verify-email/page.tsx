@@ -43,7 +43,7 @@ export default function VerifyEmailPage() {
     if (user) {
       try {
         await sendEmailVerification(user, {
-          url: `${window.location.origin}/verify-email`, // redirect after verification
+          url: `${globalThis.location.origin}/verify-email`, // redirect after verification
         });
         setEmailSent(true);
       } catch (err) {

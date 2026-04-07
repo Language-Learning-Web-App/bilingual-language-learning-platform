@@ -37,15 +37,6 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [router]);
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      window.location.href = "/sign-in"; // stronger redirect
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
-  };
-
   return (
     <div className="flex min-h-screen bg-background">
       {/* Main Content */}
