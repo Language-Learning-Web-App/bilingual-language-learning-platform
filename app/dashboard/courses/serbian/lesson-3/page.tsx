@@ -99,130 +99,102 @@ async function speak(
 }
 
 const vocabulary = [
-  { serbian: "Hotel", english: "Hotel" },
-  { serbian: "Recepcija", english: "Reception" },
-  { serbian: "Soba", english: "Room" },
-  { serbian: "Ključ", english: "Key" },
-  { serbian: "Rezervacija", english: "Reservation" },
-  { serbian: "Noć", english: "Night" },
-  { serbian: "Lift", english: "Elevator" },
-  { serbian: "Doručak", english: "Breakfast" },
-  { serbian: "Ručak", english: "Lunch" },
-  { serbian: "Večer", english: "Dinner" },
+  { serbian: "Kafa", english: "Coffee" },
+  { serbian: "Čaj", english: "Tea" },
+  { serbian: "Mleko", english: "Milk" },
+  { serbian: "Šećer", english: "Sugar" },
+  { serbian: "Sto", english: "Table" },
+  { serbian: "Stolica", english: "Chair" },
+  { serbian: "Račun", english: "Receipt" },
+  { serbian: "Konobar", english: "Waiter" },
 ];
 
 const keySentences = [
-  { serbian: "Imam rezervaciju", english: "I have a reservation." },
-  { serbian: "Koliko košta noć?", english: "How much does the night cost?" },
-  { serbian: "Gde je moja soba?", english: "Where is my room?" },
-  { serbian: "Do koliko sati treba da napustim sobu?", english: "When is the checkout time?" },
-  { serbian: "Da li imate internet?", english: "Is there WiFi? available?" },
+  { serbian: "Jednu kafu, molim.", english: "One coffee, please." },
+  { serbian: "Sa mlekom ili bez?", english: "With milk or without?" },
+  { serbian: "Koliko košta?", english: "How much is it?" },
+  { serbian: "Račun, molim.", english: "The receipt, please." },
+  { serbian: "Hvala puno.", english: "Thank you very much." },
 ];
 
 const dialogue = [
-  { speaker: "Staff", text: "Dobar dan, da li imate rezervaciju?", english: "Hello, do you have a reservation?" },
-  { speaker: "You", text: "Dobar dan, da imam rezervaciju.", english: "Hello, I have a reservation." },
-  { speaker: "Staff", text: "Vaša soba je broj 7.", english: "Your room is number 7." },
-  { speaker: "You", text: "Na kom spratu se nalazi moja soba?", english: "On which floor is my room?" },
-  { speaker: "Staff", text: "Nalazi se na prvom spratu.", english: "It is on the first floor." },
-  { speaker: "You", text: "Da li imate lift?", english: "Do you have an elevator?" },
-  { speaker: "Staff", text: "Da, imamo lift.", english: "Yes, we have an elevator." },
+  { speaker: "You", text: "Dobar dan, jednu kafu molim.", english: "Hello, one coffee please." },
+  { speaker: "Staff", text: "Sa mlekom ili bez?", english: "With milk or without?" },
+  { speaker: "You", text: "Sa mlekom.", english: "With milk." },
+  { speaker: "Staff", text: "Izvolite.", english: "Here you go." },
+  { speaker: "You", text: "Hvala!", english: "Thank you!" },
 ];
 
 const listeningQuestions = [
   {
-    prompt: "Broj rezervacije molim.",
-    promptEnglish: "Your reservation number please.",
+    prompt: "Šta želite?",
+    promptEnglish: "What would you like?",
     options: [
-      { text: "Izvolite.", english: "Here you go." },
-      { text: "Gde je izlaz?", english: "Where is the gate?" },
+      { text: "Jednu kafu, molim.", english: "One coffee please." },
+      { text: "Gde je stanica?", english: "Where is the stop?" },
       { text: "Hvala.", english: "Thanks." },
     ],
     correct: 0,
   },
   {
-    prompt: "Da li imate rezervaciju?",
-    promptEnglish: "Do you have a reservation?",
+    prompt: "Sa mlekom ili bez?",
+    promptEnglish: "With milk or without?",
     options: [
-      { text: "Želim da predam kofer.", english: "I want to check my suitcase." },
-      { text: "Da, imam rezervaciju.", english: "Yes, I have a reservation." },
-      { text: "Dobar dan.", english: "Hello." },
+      { text: "Sa mlekom.", english: "With milk." },
+      { text: "Ne znam.", english: "I don't know." },
+      { text: "Kasnije.", english: "Later." },
     ],
-    correct: 1,
-  },
-  {
-    prompt: "Koliko košta noć?",
-    promptEnglish: "How much does the night cost?",
-    options: [
-      { text: "Hvala.", english: "Thank you." },
-      { text: "25 evra.", english: "25 euros." },
-      { text: "Idite pravo i skrenite desno.", english: "Go straight and turn right." },
-    ],
-    correct: 1,
-  },
-  {
-    prompt: "Koliko noći ostajete?",
-    promptEnglish: "How many nights are you staying?",
-    options: [
-      { text: "Da, imam jedan kofer i jedan ručni prtljag.", english: "Yes, I have one suitcase and one hand luggage." },
-      { text: "Letim za Beograd.", english: "I am flying to Belgrade." },
-      { text: "3 noći.", english: "Three nights." },
-    ],
-    correct: 2,
-  },
-  {
-    prompt: "U koliko sati treba da napustim sobu?",
-    promptEnglish: "What time is the checkout?",
-    options: [
-      { text: "Izlaz je broj 12.", english: "Gate number 12." },
-      { text: "Do 11 ujutru.", english: "By 11a.m." },
-      { text: "Aerodrom je veoma veliki.", english: "The airport is very big." },
-    ],
-    correct: 1,
+    correct: 0,
   },
 ];
 
 const quizQuestions = [
   {
-    question: "What does 'rezervacija' mean?",
-    options: ["Hotel", "Reservation", "Airport", "Bus Stop"],
+    question: "What does 'kafa' mean?",
+    options: ["Tea", "Coffee", "Milk", "Sugar"],
     correct: 1,
-    serbian: "Rezervacija",
+    serbian: "Kafa",
   },
   {
-    question: "How do you say 'room' in Serbian?",
-    options: ["Karta", "Kofer", "Soba", "Kapija"],
-    correct: 2,
-    serbian: "Soba",
+    question: "How do you say 'bill' in Serbian?",
+    options: ["Sto", "Račun", "Karta", "Soba"],
+    correct: 1,
+    serbian: "Račun",
   },
-  {
-    question: "What does 'Do kada treba da napustimo sobu?' mean?",
+
+    {
+    question: "How would you order a coffee with milk?",    
     options: [
-      "Where is my flight?",
-      "When is the checkout time?",
-      "When does the flight leave?",
-      "Is this my gate?",
+        "Jednu kafu, molim.",
+        "Jednu kafu sa mlekom, molim.",
+        "Jednu kafu bez mleka, molim."
     ],
     correct: 1,
-    serbian: "Do kada treba da napustimo sobu?",
-  },
-  {
-    question: "How do you say 'key' in Serbian?",
-    options: ["Ručni prtljag", "Kapija", "Ključ", "Karta"],
+    serbian: "Jednu kafu sa mlekom, molim."
+    },
+
+    {
+    question: "What does 'Hvala' mean?",
+    options: ["Please", "Thank you", "Sorry", "Excuse me"],
+    correct: 1,
+    serbian: "Hvala"
+    },
+
+    {
+    question: "How would you ask for the bill?",    
+    options: [
+        "Kafa, molim.",
+        "Gde je račun?",
+        "Mogu li dobiti račun?"
+    ],
     correct: 2,
-    serbian: "Ključ",
-  },
-  {
-    question: "How do you say 'breakfast' in Serbian?",
-    options: ["Večera", "Ručak", "Doručak", "Doviđenja"],
-    correct: 2,
-    serbian: "Doručak",
-  },
+    serbian: "Mogu li dobiti račun?"
+    }
 ];
 
 const PASSING_PERCENT = 80;
-const QUIZ_ATTEMPTS_KEY = "bllp-serbian-lesson-2-attempts";
-const LISTENING_ATTEMPTS_KEY = "bllp-serbian-lesson-2-listening-attempts";
+const QUIZ_ATTEMPTS_KEY = "bllp-serbian-lesson-3-attempts";
+const LISTENING_ATTEMPTS_KEY = "bllp-serbian-lesson-3-listening-attempts";
 
 interface QuizAttempt {
   score: number;
@@ -250,7 +222,7 @@ function loadListeningCompletedDate(): string | null {
   }
 }
 
-const STORAGE_KEY = "bllp-serbian-lesson-2";
+const STORAGE_KEY = "bllp-serbian-lesson-3";
 
 const sectionLabels = [
   "Vocabulary",
@@ -273,22 +245,22 @@ function loadProgress(): number {
 
 const aiPrompts = [
   {
-    ai: "Dobar dan. Da li imate rezervaciju?",
-    aiEnglish: "Hello. Do you have a reservation?",
-    expected: "Da, imam rezervaciju.",
-    expectedEnglish: "Yes, I have a reservation.",
+    ai: "Šta želite da poručite?",
+    aiEnglish: "What would you like to order?",
+    expected: "Jednu kafu, molim.",
+    expectedEnglish: "One coffee, please.",
   },
   {
-    ai: "Koliko noći ostajete?",
-    aiEnglish: "How many nights are you staying?",
-    expected: "3 noći.",
-    expectedEnglish: "Three nights.",
+    ai: "Sa mlekom ili bez?",
+    aiEnglish: "With milk or without?",
+    expected: "Sa mlekom.",
+    expectedEnglish: "With milk.",
   },
   {
-    ai: "Dajte mi vaša dokumenta, molim vas.",
-    aiEnglish: "Please show me your documents.",
-    expected: "Evo mojih dokumenata.",
-    expectedEnglish: "Here are my documents.",
+    ai: "Još nešto?",
+    aiEnglish: "Anything else?",
+    expected: "Ne, hvala.",
+    expectedEnglish: "No, thank you.",
   },
 ];
 
@@ -487,7 +459,7 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
   );
 }
 
-export default function SerbianLesson2Page() {
+export default function SerbianLesson3Page() {
   const [mounted, setMounted] = useState(false);
   const [currentSection, setCurrentSection] = useState(0);
   const [highestReached, setHighestReached] = useState(0);
@@ -592,10 +564,10 @@ export default function SerbianLesson2Page() {
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold tracking-tight">
-              Lesson 2 — At the Hotel
+              Lesson 3 — At the Café
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Focus: Check-in, hotel vocabulary, and common phrases for staying at a hotel.
+              Focus: Ordering, paying, and common café vocabulary.
             </p>
           </div>
         </div>
