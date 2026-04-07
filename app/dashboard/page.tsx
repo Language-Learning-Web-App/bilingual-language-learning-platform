@@ -45,7 +45,6 @@ export default function DashboardPage() {
           Welcome back, {profile?.name ?? ""} 👋
         </h1>
 
-        {/* Stats Grid */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -60,6 +59,7 @@ export default function DashboardPage() {
             <p className="text-sm text-muted-foreground">Hours Learned</p>
             <p className="mt-2 text-3xl font-bold">0</p>
           </div>
+
           <div className="rounded-xl border bg-card p-6 shadow-sm">
             <p className="text-sm text-muted-foreground">Current Streak</p>
             <p className="mt-2 text-3xl font-bold">0 days</p>
@@ -74,6 +74,7 @@ export default function DashboardPage() {
           className="mt-10 rounded-xl border bg-card p-6 shadow-sm"
         >
           <h2 className="mb-4 text-lg font-semibold">Recent Activity</h2>
+
           <div className="space-y-3">
             {activity.length === 0 ? (
               <p className="text-sm text-muted-foreground">
@@ -90,8 +91,9 @@ export default function DashboardPage() {
                       ? `Enrolled in ${entry.course}`
                       : `Dropped ${entry.course}`}
                   </span>
+
                   <span className="text-xs text-muted-foreground/60">
-                    {formatTime(new Date(entry.timestamp))}
+                    {formatTime(entry.timestamp)}
                   </span>
                 </div>
               ))
