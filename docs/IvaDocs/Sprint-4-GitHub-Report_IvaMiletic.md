@@ -31,6 +31,7 @@
 ---
 
 ## Recent Commits by ivam7-cs (Last 2 Weeks)
+## Total commits: 13
 
 | Commit Hash | Commit Message |
 |------------|----------------|
