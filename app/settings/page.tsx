@@ -110,7 +110,7 @@ export default function SettingsPage() {
 
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" className="gap-2">
-              <Link href="/sign-up">
+              <Link href="/dashboard">
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Link>
