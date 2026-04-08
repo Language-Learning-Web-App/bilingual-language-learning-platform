@@ -6,8 +6,7 @@
 
 ---
 
-## Pull Requests (Merged: 2026-03-24 .. 2026-04-07)
-- **Labels:** 9   
+## Pull Requests (Merged: 2026-03-24 .. 2026-04-07) 
 
 ### PR List
 1. **Added Settings functionality and Email verification**  
