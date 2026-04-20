@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import sdk from "microsoft-cognitiveservices-speech-sdk";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -14,46 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "text is required" }, { status: 400 });
     }
 
-    if (lang === "sr-RS") {
-      const speechConfig = sdk.SpeechConfig.fromSubscription(
-        process.env.AZURE_SPEECH_KEY!,
-        process.env.AZURE_SPEECH_REGION!
-      );
-
-      speechConfig.speechSynthesisLanguage = "sr-RS";
-      speechConfig.speechSynthesisVoiceName = "Nicholas";
-      const synthesizer = new sdk.SpeechSynthesizer(speechConfig, null);
-
-      const audioBuffer: Buffer = await new Promise((resolve, reject) => {
-        synthesizer.speakTextAsync(
-          text,
-          (res) => {
-            synthesizer.close();
-            resolve(Buffer.from(res.audioData));
-          },
-          (err) => {
-            synthesizer.close();
-            reject(err);
-          }
-        );
-      });
-
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(audioBuffer);
-          controller.close();
-        },
-      });
-
-      return new NextResponse(stream, {
-        status: 200,
-        headers: {
-          "Content-Type": "audio/mpeg",
-        },
-      });
-    }
-
-    // 2. Turkish + English → OpenAI TTS
+    // Choose voice (optional logic)
     const voice =
       lang === "tr-TR"
         ? "shimmer"
@@ -74,6 +34,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "audio/mpeg",
       },
     });
+
   } catch (error: any) {
     console.error("TTS error:", error);
     return NextResponse.json(
