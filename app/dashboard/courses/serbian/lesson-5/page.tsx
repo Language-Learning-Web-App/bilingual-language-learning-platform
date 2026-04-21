@@ -153,11 +153,12 @@ const listeningQuestions = [
             { text: "Molim.", english: "Please." },
             { text: "Izvinite.", english: "Excuse me." },
         ],
+        correct: 0,
     },
 
     {
         prompt: "Šta znači 'bakšiš'?",
-        promptEnglish: "What does 'tip' mean?",
+        promptEnglish: "What does '' mean?",
         options: [
             { text: "Naplatna karta", english: "Receipt" },
             { text: "Bakšiš", english: "Tip" },
