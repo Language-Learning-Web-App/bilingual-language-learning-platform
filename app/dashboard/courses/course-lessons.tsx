@@ -27,6 +27,7 @@ import {
   Mail,
   ShoppingBag,
   Users,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +63,14 @@ const lessons: Lesson[] = [
   { id: 13, title: "At the Post Office", description: "Sending packages and buying stamps.", icon: Mail, color: "text-rose-500", bg: "bg-rose-50" },
   { id: 14, title: "At the Shopping Mall", description: "Sizes, prices, and returns.", icon: ShoppingBag, color: "text-pink-500", bg: "bg-pink-50" },
   { id: 15, title: "At a Friend's House", description: "Small talk and socializing.", icon: Users, color: "text-cyan-500", bg: "bg-cyan-50" },
+  {
+  id: 16,
+  title: "Cyrillic Alphabet",
+  description: "Learn to read and write Serbian Cyrillic letters (А-Ш).",
+  icon: BookOpen,
+  color: "text-purple-500",
+  bg: "bg-purple-50",
+}
 ];
 
 const TOTAL_SECTIONS = 6;
