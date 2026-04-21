@@ -143,90 +143,92 @@ const keySentences = [
 ];
 
 const dialogue = [
-    { speaker: "Waiter", text: "Dobar dan, šta želite?", english: "Hello, what would you like?" },
-    { speaker: "You", text: "Želim piletinu i krompir", english: "I want chicken and fries." },
-    { speaker: "Waiter", text: "Da li želite nešto za piće?", english: "Would you like something to drink?" },
-    { speaker: "You", text: "Vodu, molim.", english: "Water, please." },
-    { speaker: "Waiter", text: "U redu.", english: "Alright." },
-    { speaker: "You", text: "Hvala.", english: "Thank you." },
+    { speaker: "Aleksa", text: "Kako se pise voda na cirilici?", english: "How do you write water in cyrillic?" },
+    { speaker: "You", text: "вода", english: "water" },
+    { speaker: "Aleksa", text: "Kako se pise jabuka na cirilici?", english: "How do you write apple in cyrillic?" },
+    { speaker: "You", text: "јабука", english: "apple" },
+    { speaker: "Aleksa", text: "Kako se pise avion na cirilici?", english: "How do you write airplane in cyrillic?" },
+    { speaker: "You", text: "авион", english: "airplane" },
 ];
 
 const listeningQuestions = [
     {
-        prompt: "Šta želite da naručite?",
-        promptEnglish: "What would you like to order?",
+        prompt: "Koje slovo je 'V'?",
+        promptEnglish: "What letter is 'V'?",
         options: [
-            { text: "Piletinu i krompir", english: "Chicken and fries." },
-            { text: "Vodu, molim.", english: "Water, please." },
-            { text: "Hvala.", english: "Thanks." },
+            { text: "В", english: "В" },
+            { text: "Б", english: "Б." },
+            { text: "С", english: "С" },
         ],
         correct: 0,
     },
     {
-        prompt: "Da li želite nešto za piće?",
-        promptEnglish: "Would you like something to drink?",
+        prompt: "Koje slovo je 'Ć'?",
+        promptEnglish: "What letter is 'Ć'?",
         options: [
-            { text: "Vodu, molim.", english: "Water, please." },
-            { text: "Ne znam.", english: "I don't know." },
-            { text: "Kasnije.", english: "Later." },
+            { text: "Ћ", english: "Ђ" },
+            { text: "К", english: "К" },
+            { text: "З", english: "З" },
         ],
         correct: 0,
     },
 
     {
-        prompt: "Kako kažete 'thank you' na srpskom?",
-        promptEnglish: "How do you say 'thank you' in Serbian?",
+        prompt: "Koje slovo je 'Ž'?",
+        promptEnglish: "What letter is 'Ž'?",
         options: [
-            { text: "Hvala.", english: "Thank you." },
-            { text: "Molim.", english: "Please." },
-            { text: "Izvinite.", english: "Excuse me." },
+            { text: "Љ", english: "Љ" },
+            { text: "Њ", english: "Њ" },
+            { text: "Ж", english: "Ж" },
         ],
+        correct: 2,
     },
 
     {
-        prompt: "Šta znači 'bakšiš'?",
-        promptEnglish: "What does 'tip' mean?",
+        prompt: "Koje slovo je 'Š'?",
+        promptEnglish: "What letter is 'Š'?",
         options: [
-            { text: "Naplatna karta", english: "Receipt" },
-            { text: "Bakšiš", english: "Tip" },
-            { text: "Račun", english: "Bill" },
+            { text: "С", english: "С" },
+            { text: "Ш", english: "Ш" },
+            { text: "Ц", english: "Ц" },
         ],
         correct: 1,
     },
 
     {
-        prompt: "Kako kažete 'menu' na srpskom?",
-        promptEnglish: "How do you say 'menu' in Serbian?",
+        prompt: "Koje slovo je 'S'?",
+        promptEnglish: "What letter is 'S'?",
         options: [
-            { text: "Jelovnik", english: "Menu" },
-            { text: "Restoran", english: "Restaurant" },
-            { text: "Hrana", english: "Food" },
+            { text: "С", english: "С" },
+            { text: "Ц", english: "Ц" },
+            { text: "А", english: "А" },
         ],
+        correct: 0,
     }
 ];
 
 const quizQuestions = [
     {
-        question: "What does 'hleb' mean?",
+        question: "What does 'вода' mean?",
         options: ["Milk", "Bread", "Fruit", "Water"],
-        correct: 1,
-        serbian: "Hleb",
+        correct: 3,
+        serbian: "Voda",
     },
     {
-        question: "How do you say 'milk' in Serbian?",
-        options: ["Meso", "Voda", "Mleko", "Sok"],
+        question: "How do you write 'milk' in Serbian Cyrillic?",
+        options: ["Месо", "Вода", "Млеко", "Сок"],
         correct: 2,
         serbian: "Mleko",
     },
     {
-        question: "What does 'voće' mean?",
-        options: ["Vegetables", "Fruit", "Meat", "Bread"],
+        question: "What does 'јабука' mean?",
+        options: ["Vegetables", "Apple", "Meat", "Bread"],
         correct: 1,
-        serbian: "Voće",
+        serbian: "Jabuka",
     },
     {
-        question: "How do you say 'cash register' in Serbian?",
-        options: ["Kasa", "Sto", "Torba", "Karta"],
+        question: "How do you write 'cash register' in Serbian Cyrillic?",
+        options: ["Каса", "Сто", "Торба", "Карта"],
         correct: 0,
         serbian: "Kasa",
     },
@@ -267,7 +269,7 @@ const STORAGE_KEY = "bllp-serbian-lesson-16";
 const sectionLabels = [
     "Letters",
     "Words",
-    "Type the Words In",
+    "Dialog",
     "Guess the Letter",
     "Speaking Practice",
     "Quiz",
@@ -285,22 +287,22 @@ function loadProgress(): number {
 
 const aiPrompts = [
     {
-        ai: "Da li ste spremni da naručite?",
-        aiEnglish: "Are you ready to order?",
-        expected: "Da, želim piletinu.",
-        expectedEnglish: "Yes, I want chicken.",
+        ai: "Како се изговара вода?",
+        aiEnglish: "How do you pronounce water?",
+        expected: "Вода",
+        expectedEnglish: "Correct!",
     },
     {
-        ai: "Šta želite za piće?",
-        aiEnglish: "What would you like to drink?",
-        expected: "Vodu, molim.",
-        expectedEnglish: "Water, please.",
+        ai: "Како се изговара млеко?",
+        aiEnglish: "How do you pronounce milk?",
+        expected: "Млеко",
+        expectedEnglish: "Correct!",
     },
     {
-        ai: "Da li želite još nešto?",
-        aiEnglish: "Would you like anything else?",
+        ai: "Како се изговара јабука?",
+        aiEnglish: "How do you pronounce apple?",
         expected: "Ne, hvala.",
-        expectedEnglish: "No, thank you.",
+        expectedEnglish: "Correct!",
     },
 ];
 
@@ -604,7 +606,7 @@ export default function SerbianLesson16Page() {
                     </div>
                     <div>
                         <h1 className="font-display text-2xl font-bold tracking-tight">
-                            Lesson 4 — At a Restaurant
+                            Lesson 16 — Cyrillic Alphabet
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
                             Focus: Ordering food, common phrases, and a mini dialogue.
@@ -784,7 +786,7 @@ export default function SerbianLesson16Page() {
                     </motion.section>
                 )}
 
-                {/* Section 2: Type the Words In */}
+                {/* Section 2: Dialog */}
                 {started && currentSection === 2 && (
                     <motion.section
                         key="dialogue"
@@ -793,7 +795,7 @@ export default function SerbianLesson16Page() {
                         animate="show"
                         exit="hidden"
                     >
-                        <h2 className="text-lg font-semibold mb-4">Type the Words In</h2>
+                        <h2 className="text-lg font-semibold mb-4">Dialog</h2>
                         <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
                             {dialogue.map((line, i) => {
                                 const dlgId = `dialogue-${i}`;
