@@ -346,6 +346,7 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [playingAiId, setPlayingAiId] = useState<string | null>(null);
+  const [speechError, setSpeechError] = useState<string | null>(null);
 
   const handleSpeakAi = (id: string, text: string) => {
     if (playingAiId === id) {
@@ -364,14 +365,29 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
     speak(text, "tr-TR", () => setPlayingAiId(null));
   };
 
-  const startListening = () => {
+  const startListening = async () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Try Chrome.");
+      setSpeechError("Speech recognition is not supported here. Try Chrome.");
       return;
+    }
+
+    if (!window.isSecureContext && window.location.hostname !== "localhost") {
+      setSpeechError("Microphone needs HTTPS (or localhost) to capture speech.");
+      return;
+    }
+
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((t) => t.stop());
+      } catch {
+        setSpeechError("Microphone permission is blocked. Please allow mic access.");
+        return;
+      }
     }
 
     const recognition = new SpeechRecognition();
@@ -379,6 +395,7 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
+    setSpeechError(null);
     setListening(true);
     setTranscript("");
 
@@ -413,15 +430,32 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
       setShowHint(false);
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event: any) => {
       setListening(false);
+      const code = event?.error;
+      if (code === "not-allowed" || code === "service-not-allowed") {
+        setSpeechError("Microphone permission denied. Allow microphone and try again.");
+      } else if (code === "network") {
+        setSpeechError("Speech recognition network error. Check connection and retry.");
+      } else if (code === "language-not-supported") {
+        setSpeechError("Turkish speech recognition is not available in this browser.");
+      } else if (code === "no-speech") {
+        setSpeechError("No speech detected. Please speak after tapping the mic.");
+      } else {
+        setSpeechError("Could not capture speech. Please try again.");
+      }
     };
 
     recognition.onend = () => {
       setListening(false);
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch {
+      setListening(false);
+      setSpeechError("Could not start microphone capture. Try reloading the page.");
+    }
   };
 
   const allDone =
@@ -529,6 +563,11 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
             {transcript && (
               <p className="text-xs text-muted-foreground mb-3">
                 Heard: &ldquo;{transcript}&rdquo;
+              </p>
+            )}
+            {speechError && (
+              <p className="text-xs text-red-500 mb-3">
+                {speechError}
               </p>
             )}
 
