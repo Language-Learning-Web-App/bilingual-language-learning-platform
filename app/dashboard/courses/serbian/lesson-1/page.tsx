@@ -28,8 +28,8 @@ let currentAbort: AbortController | null = null;
 
 async function speak(
   text: string,
-  lang: "sr-RS" | "en-US" = "sr-RS",
-  onEnd?: () => void
+  onEnd?: () => void,
+  lang?: string
 ): Promise<void> {
   if (typeof window === "undefined") return;
 
@@ -85,8 +85,8 @@ async function speak(
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = lang;
       utterance.rate = 0.9;
+      if (lang) utterance.lang = lang;
       utterance.onend = () => {
         if (onSpeakEnd) {
           onSpeakEnd();
@@ -393,11 +393,10 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
           {messages.map((msg, i) => (
             <div key={i}>
               <p
-                className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${
-                  msg.role === "you"
+                className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${msg.role === "you"
                     ? "text-right text-primary"
                     : "text-muted-foreground"
-                }`}
+                  }`}
               >
                 {msg.role === "ai" ? "AI Tutor" : "You"}
               </p>
@@ -405,20 +404,18 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
                 className={`flex ${msg.role === "you" ? "justify-end" : ""}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
-                    msg.role === "ai"
+                  className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${msg.role === "ai"
                       ? "bg-muted text-foreground"
                       : "bg-primary text-primary-foreground"
-                  }`}
+                    }`}
                 >
                   {msg.text}
                 </div>
               </div>
               {msg.english && (
                 <p
-                  className={`mt-1 text-xs text-muted-foreground/70 italic ${
-                    msg.role === "you" ? "text-right pr-1" : "pl-1"
-                  }`}
+                  className={`mt-1 text-xs text-muted-foreground/70 italic ${msg.role === "you" ? "text-right pr-1" : "pl-1"
+                    }`}
                 >
                   {msg.english}
                 </p>
@@ -450,11 +447,10 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
             <button
               onClick={startListening}
               disabled={listening}
-              className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full transition-all ${
-                listening
+              className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full transition-all ${listening
                   ? "bg-red-500 text-white animate-pulse scale-110"
                   : "bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105"
-              }`}
+                }`}
             >
               <Mic className="h-7 w-7" />
             </button>
@@ -554,14 +550,19 @@ export default function SerbianLesson1Page() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSpeak = (id: string, text: string, lang: "sr-RS" | "en-US" = "sr-RS") => {
+  const handleSpeak = (id: string, text: string, lang?: string) => {
     if (playingId === id) {
-      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+      }
       setPlayingId(null);
       return;
     }
+
     setPlayingId(id);
-    speak(text, lang, () => setPlayingId(null));
+
+    speak(text, () => setPlayingId(null), lang);
   };
 
   const handleNext = () => {
@@ -637,15 +638,13 @@ export default function SerbianLesson1Page() {
                   key={label}
                   onClick={() => clickable && jumpToSection(i)}
                   disabled={!clickable}
-                  className={`flex items-center gap-1 text-[10px] transition-colors ${
-                    clickable ? "cursor-pointer hover:text-primary" : "cursor-default"
-                  } ${
-                    completed
+                  className={`flex items-center gap-1 text-[10px] transition-colors ${clickable ? "cursor-pointer hover:text-primary" : "cursor-default"
+                    } ${completed
                       ? "text-primary"
                       : active
-                      ? "text-foreground font-medium"
-                      : "text-muted-foreground/50"
-                  }`}
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground/50"
+                    }`}
                 >
                   {(reviewMode || completed) ? (
                     <CheckCircle2 className="h-3 w-3" />
@@ -690,11 +689,10 @@ export default function SerbianLesson1Page() {
                       <button
                         type="button"
                         onClick={() => handleSpeak(id, `${word.serbian}. ${word.english}`, "sr-RS")}
-                        className={`shrink-0 rounded-full p-1.5 transition-colors ${
-                          isPlaying
+                        className={`shrink-0 rounded-full p-1.5 transition-colors ${isPlaying
                             ? "text-primary bg-primary/10"
                             : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                        }`}
+                          }`}
                         title={`Listen: ${word.serbian}`}
                       >
                         <Volume2 className="h-4 w-4" />
@@ -750,11 +748,10 @@ export default function SerbianLesson1Page() {
                       <button
                         type="button"
                         onClick={() => handleSpeak(id, `${s.serbian}. ${s.english}`, "sr-RS")}
-                        className={`shrink-0 mt-0.5 rounded-full p-1.5 transition-colors ${
-                          isPlaying
+                        className={`shrink-0 mt-0.5 rounded-full p-1.5 transition-colors ${isPlaying
                             ? "text-primary bg-primary/10"
                             : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                        }`}
+                          }`}
                         title={`Listen: ${s.serbian}`}
                       >
                         <Volume2 className="h-4 w-4" />
@@ -797,18 +794,16 @@ export default function SerbianLesson1Page() {
                 const isYou = line.speaker === "You";
                 return (
                   <div key={i}>
-                    <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${
-                      isYou ? "text-right text-primary" : "text-muted-foreground"
-                    }`}>
+                    <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${isYou ? "text-right text-primary" : "text-muted-foreground"
+                      }`}>
                       {line.speaker}
                     </p>
                     <div className={`flex ${isYou ? "justify-end" : ""}`}>
                       <div
-                        className={`relative overflow-hidden max-w-[80%] rounded-xl px-4 py-2.5 text-sm cursor-pointer ${
-                          line.speaker === "Staff"
+                        className={`relative overflow-hidden max-w-[80%] rounded-xl px-4 py-2.5 text-sm cursor-pointer ${line.speaker === "Staff"
                             ? "bg-muted text-foreground"
                             : "bg-primary text-primary-foreground"
-                        }`}
+                          }`}
                         onClick={() => handleSpeak(dlgId, line.text, "sr-RS")}
                       >
                         <div className="flex items-center gap-2 relative z-10">
@@ -816,11 +811,10 @@ export default function SerbianLesson1Page() {
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); handleSpeak(dlgId, line.text, "sr-RS"); }}
-                            className={`shrink-0 rounded-full p-1 transition-colors ${
-                              isPlaying
+                            className={`shrink-0 rounded-full p-1 transition-colors ${isPlaying
                                 ? isYou ? "text-primary-foreground/90 bg-white/20" : "text-primary bg-primary/10"
                                 : isYou ? "text-primary-foreground/60 hover:text-primary-foreground/90" : "text-muted-foreground hover:text-primary"
-                            }`}
+                              }`}
                           >
                             <Volume2 className="h-3.5 w-3.5" />
                           </button>
@@ -828,9 +822,8 @@ export default function SerbianLesson1Page() {
                         {isPlaying && (
                           <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
                             <div
-                              className={`h-full w-full bg-gradient-to-r from-transparent to-transparent ${
-                                isYou ? "via-white/70" : "via-primary/40"
-                              }`}
+                              className={`h-full w-full bg-gradient-to-r from-transparent to-transparent ${isYou ? "via-white/70" : "via-primary/40"
+                                }`}
                               style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
                             />
                           </div>
@@ -838,9 +831,8 @@ export default function SerbianLesson1Page() {
                       </div>
                     </div>
                     <p
-                      className={`mt-1 text-xs text-muted-foreground/70 italic ${
-                        isYou ? "text-right pr-1" : "pl-1"
-                      }`}
+                      className={`mt-1 text-xs text-muted-foreground/70 italic ${isYou ? "text-right pr-1" : "pl-1"
+                        }`}
                     >
                       {line.english}
                     </p>
@@ -935,11 +927,10 @@ export default function SerbianLesson1Page() {
                     <div className="flex items-center gap-3 relative z-10">
                       <button
                         type="button"
-                        className={`shrink-0 rounded-full p-2 transition-colors ${
-                          isPromptPlaying
+                        className={`shrink-0 rounded-full p-2 transition-colors ${isPromptPlaying
                             ? "text-primary bg-primary/10"
                             : "text-primary hover:bg-primary/10"
-                        }`}
+                          }`}
                       >
                         <Volume2 className="h-5 w-5" />
                       </button>
@@ -1039,11 +1030,10 @@ export default function SerbianLesson1Page() {
                               setListeningRevealed((prev) => new Set(prev).add(oi));
                               handleSpeak(optId, opt.text, "sr-RS");
                             }}
-                            className={`absolute right-2 top-1/2 -translate-y-1/2 z-20 shrink-0 rounded-full p-1.5 transition-colors ${
-                              isOptPlaying
+                            className={`absolute right-2 top-1/2 -translate-y-1/2 z-20 shrink-0 rounded-full p-1.5 transition-colors ${isOptPlaying
                                 ? "text-primary bg-primary/10"
                                 : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                            }`}
+                              }`}
                           >
                             <Volume2 className="h-3.5 w-3.5" />
                           </button>
@@ -1207,9 +1197,8 @@ export default function SerbianLesson1Page() {
                               {a.score}/{a.total}
                             </span>
                             <span
-                              className={`font-semibold ${
-                                a.passed ? "text-emerald-600" : "text-red-500"
-                              }`}
+                              className={`font-semibold ${a.passed ? "text-emerald-600" : "text-red-500"
+                                }`}
                             >
                               {a.passed ? "Passed" : "Failed"}
                             </span>
@@ -1224,11 +1213,10 @@ export default function SerbianLesson1Page() {
                         const last = attempts[0];
                         const pct = Math.round((last.score / last.total) * 100);
                         return (
-                          <div className={`mt-3 rounded-lg px-4 py-3 text-sm ${
-                            last.passed
+                          <div className={`mt-3 rounded-lg px-4 py-3 text-sm ${last.passed
                               ? "bg-emerald-50 border border-emerald-200"
                               : "bg-red-50 border border-red-200"
-                          }`}>
+                            }`}>
                             <p className="font-medium">
                               Last attempt: {last.score}/{last.total} ({pct}%){" "}
                               <span className={last.passed ? "text-emerald-600" : "text-red-500"}>
@@ -1266,8 +1254,8 @@ export default function SerbianLesson1Page() {
                       {quizPaused
                         ? "Start Over"
                         : attempts.length === 0
-                        ? "Start Quiz"
-                        : "Retake Quiz"}
+                          ? "Start Quiz"
+                          : "Retake Quiz"}
                       <ChevronRight className="ml-1 h-4 w-4" />
                     </Button>
                   </div>
@@ -1284,82 +1272,79 @@ export default function SerbianLesson1Page() {
                     const qId = `quiz-q-${qi}`;
                     const isQPlaying = playingId === qId;
                     return (
-                    <div key={qi} className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
-                      <div className="flex items-start justify-between gap-2 mb-3 relative z-10">
-                        <p className="font-medium text-foreground">
-                          {qi + 1}. {q.question}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSpeak(qId, q.question, "en-US");
-                          }}
-                          className={`shrink-0 mt-0.5 rounded-full p-1.5 transition-colors ${
-                            isQPlaying
-                              ? "text-primary bg-primary/10"
-                              : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-                          }`}
-                          title="Listen to question"
-                        >
-                          <Volume2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <div className="grid gap-2 sm:grid-cols-2 relative z-10">
-                        {q.options.map((opt, oi) => {
-                          const oId = `quiz-q-${qi}-o-${oi}`;
-                          const isOPlaying = playingId === oId;
-                          return (
+                      <div key={qi} className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm">
+                        <div className="flex items-start justify-between gap-2 mb-3 relative z-10">
+                          <p className="font-medium text-foreground">
+                            {qi + 1}. {q.question}
+                          </p>
                           <button
-                            key={oi}
-                            onClick={() => {
-                              const next = [...quizAnswers];
-                              next[qi] = oi;
-                              setQuizAnswers(next);
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSpeak(qId, q.question, "en-US");
                             }}
-                            className={`group relative overflow-hidden flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm text-left transition-all ${
-                              quizAnswers[qi] === oi
-                                ? "border-primary bg-primary/10 text-primary font-medium"
-                                : "bg-card text-foreground hover:border-primary/30 hover:bg-muted"
-                            }`}
-                          >
-                            <span>{opt}</span>
-                            <span
-                              role="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSpeak(oId, opt, isEnglishOptions ? "en-US" : "sr-RS");
-                              }}
-                              className={`shrink-0 ml-2 rounded-full p-1 transition-colors ${
-                                isOPlaying
-                                  ? "text-primary bg-primary/10 opacity-100"
-                                  : "text-muted-foreground/50 hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100"
+                            className={`shrink-0 mt-0.5 rounded-full p-1.5 transition-colors ${isQPlaying
+                                ? "text-primary bg-primary/10"
+                                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                               }`}
-                              title={`Listen: ${opt}`}
-                            >
-                              <Volume2 className="h-3.5 w-3.5" />
-                            </span>
-                            {isOPlaying && (
-                              <div className="absolute bottom-0 left-0 w-full h-0.5 overflow-hidden">
-                                <div
-                                  className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
-                                  style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
-                                />
-                              </div>
-                            )}
+                            title="Listen to question"
+                          >
+                            <Volume2 className="h-4 w-4" />
                           </button>
-                          );
-                        })}
-                      </div>
-                      {isQPlaying && (
-                        <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
-                          <div
-                            className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
-                            style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
-                          />
                         </div>
-                      )}
-                    </div>
+                        <div className="grid gap-2 sm:grid-cols-2 relative z-10">
+                          {q.options.map((opt, oi) => {
+                            const oId = `quiz-q-${qi}-o-${oi}`;
+                            const isOPlaying = playingId === oId;
+                            return (
+                              <button
+                                key={oi}
+                                onClick={() => {
+                                  const next = [...quizAnswers];
+                                  next[qi] = oi;
+                                  setQuizAnswers(next);
+                                }}
+                                className={`group relative overflow-hidden flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm text-left transition-all ${quizAnswers[qi] === oi
+                                    ? "border-primary bg-primary/10 text-primary font-medium"
+                                    : "bg-card text-foreground hover:border-primary/30 hover:bg-muted"
+                                  }`}
+                              >
+                                <span>{opt}</span>
+                                <span
+                                  role="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSpeak(oId, opt, isEnglishOptions ? "en-US" : "sr-RS");
+                                  }}
+                                  className={`shrink-0 ml-2 rounded-full p-1 transition-colors ${isOPlaying
+                                      ? "text-primary bg-primary/10 opacity-100"
+                                      : "text-muted-foreground/50 hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100"
+                                    }`}
+                                  title={`Listen: ${opt}`}
+                                >
+                                  <Volume2 className="h-3.5 w-3.5" />
+                                </span>
+                                {isOPlaying && (
+                                  <div className="absolute bottom-0 left-0 w-full h-0.5 overflow-hidden">
+                                    <div
+                                      className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+                                      style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
+                                    />
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {isQPlaying && (
+                          <div className="absolute bottom-0 left-0 w-full h-1 overflow-hidden">
+                            <div
+                              className="h-full w-full bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+                              style={{ animation: "progress-sweep 1.2s ease-in-out infinite" }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -1458,16 +1443,15 @@ export default function SerbianLesson1Page() {
                     return (
                       <>
                         <Trophy
-                          className={`h-14 w-14 mx-auto mb-4 ${
-                            passed ? "text-amber-500" : "text-muted-foreground"
-                          }`}
+                          className={`h-14 w-14 mx-auto mb-4 ${passed ? "text-amber-500" : "text-muted-foreground"
+                            }`}
                         />
                         <h3 className="font-display text-2xl font-bold mb-2">
                           {score === quizQuestions.length
                             ? "Perfect Score!"
                             : passed
-                            ? "You Passed!"
-                            : "Not Quite — Try Again"}
+                              ? "You Passed!"
+                              : "Not Quite — Try Again"}
                         </h3>
                         <p className="text-3xl font-bold text-primary mb-1">
                           {score}/{quizQuestions.length}
@@ -1476,9 +1460,8 @@ export default function SerbianLesson1Page() {
                           correct answers
                         </p>
                         <p
-                          className={`text-sm font-semibold mb-6 ${
-                            passed ? "text-emerald-600" : "text-red-500"
-                          }`}
+                          className={`text-sm font-semibold mb-6 ${passed ? "text-emerald-600" : "text-red-500"
+                            }`}
                         >
                           {Math.round(
                             (score / quizQuestions.length) * 100
@@ -1493,11 +1476,10 @@ export default function SerbianLesson1Page() {
                     {quizQuestions.map((q, qi) => (
                       <div
                         key={qi}
-                        className={`rounded-lg px-4 py-2.5 text-sm ${
-                          quizAnswers[qi] === q.correct
+                        className={`rounded-lg px-4 py-2.5 text-sm ${quizAnswers[qi] === q.correct
                             ? "bg-emerald-50 border border-emerald-200"
                             : "bg-red-50 border border-red-200"
-                        }`}
+                          }`}
                       >
                         <p className="font-medium">
                           {quizAnswers[qi] === q.correct ? (
@@ -1535,9 +1517,8 @@ export default function SerbianLesson1Page() {
                               {a.score}/{a.total}
                             </span>
                             <span
-                              className={`font-semibold ${
-                                a.passed ? "text-emerald-600" : "text-red-500"
-                              }`}
+                              className={`font-semibold ${a.passed ? "text-emerald-600" : "text-red-500"
+                                }`}
                             >
                               {a.passed ? "Passed" : "Failed"}
                             </span>

@@ -1,81 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import sdk from "microsoft-cognitiveservices-speech-sdk";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, lang } = await req.json();
+    const { text } = await req.json();
 
+    console.log("ELEVENLABS KEY:", process.env.ELEVENLABS_API_KEY);
+    
     if (!text || typeof text !== "string") {
-      return NextResponse.json({ error: "text is required" }, { status: 400 });
-    }
-
-    if (lang === "sr-RS") {
-      const speechConfig = sdk.SpeechConfig.fromSubscription(
-        process.env.AZURE_SPEECH_KEY!,
-        process.env.AZURE_SPEECH_REGION!
+      return NextResponse.json(
+        { error: "text is required" },
+        { status: 400 }
       );
-
-      speechConfig.speechSynthesisLanguage = "sr-RS";
-      speechConfig.speechSynthesisVoiceName = "Nicholas";
-      const synthesizer = new sdk.SpeechSynthesizer(speechConfig, null);
-
-      const audioBuffer: Buffer = await new Promise((resolve, reject) => {
-        synthesizer.speakTextAsync(
-          text,
-          (res) => {
-            synthesizer.close();
-            resolve(Buffer.from(res.audioData));
-          },
-          (err) => {
-            synthesizer.close();
-            reject(err);
-          }
-        );
-      });
-
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(audioBuffer);
-          controller.close();
-        },
-      });
-
-      return new NextResponse(stream, {
-        status: 200,
-        headers: {
-          "Content-Type": "audio/mpeg",
-        },
-      });
     }
 
-    // 2. Turkish + English → OpenAI TTS
-    const voice =
-      lang === "tr-TR"
-        ? "shimmer"
-        : "alloy";
+    // Default ElevenLabs voice (Rachel)
+    const voiceId = "21m00Tcm4TlvDq8ikWAM";
 
-    const response = await openai.audio.speech.create({
-      model: "gpt-4o-mini-tts",
-      voice,
-      input: text,
-      response_format: "mp3",
-    });
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "xi-api-key": process.env.ELEVENLABS_API_KEY!,
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_multilingual_v2",
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+          },
+        }),
+      }
+    );
 
-    const buffer = Buffer.from(await response.arrayBuffer());
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText);
+    }
 
-    return new NextResponse(buffer, {
+    const audioBuffer = Buffer.from(await response.arrayBuffer());
+
+    return new NextResponse(audioBuffer, {
       status: 200,
       headers: {
         "Content-Type": "audio/mpeg",
       },
     });
   } catch (error: any) {
-    console.error("TTS error:", error);
+    console.error("ElevenLabs TTS error:", error);
+
     return NextResponse.json(
       { error: error.message || "TTS failed" },
       { status: 500 }
