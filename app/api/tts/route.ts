@@ -4,6 +4,8 @@ export async function POST(req: NextRequest) {
   try {
     const { text } = await req.json();
 
+    console.log("ELEVENLABS KEY:", process.env.ELEVENLABS_API_KEY);
+    
     if (!text || typeof text !== "string") {
       return NextResponse.json(
         { error: "text is required" },
