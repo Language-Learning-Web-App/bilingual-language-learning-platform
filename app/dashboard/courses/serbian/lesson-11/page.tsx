@@ -97,80 +97,80 @@ async function speak(
 }
 
 const vocabulary = [
-    { serbian: "Prodavnica", english: "Grocery store" },
-    { serbian: "Voće", english: "Fruits" },
-    { serbian: "Hrana", english: "Food" },
-    { serbian: "Povrće", english: "Vegetables" },
-    { serbian: "Jaja", english: "Eggs" },
-    { serbian: "Sredstva za čišćenje", english: "Cleaning supplies" },
-    { serbian: "Kolica", english: "Shopping cart" },
-    { serbian: "Kesa", english: "Bag" },
+    { serbian: "Kancelarija", english: "Office" },
+    { serbian: "Sastanak", english: "Meeting" },
+    { serbian: "Izveštaj", english: "Report" },
+    { serbian: "Rok", english: "Deadline" },
+    { serbian: "Projekat", english: "Project" },
+    { serbian: "Prezentacija", english: "Presentation" },
+    { serbian: "Kolega", english: "Coworker" },
+    { serbian: "Šef", english: "Boss" },
 ];
 
 const keySentences = [
-    { serbian: "Gde se nalazi prodavnica?", english: "Where is the grocery store?" },
-    { serbian: "U koliko seti se otvara prodavnica?", english: "What time does the store open?" },
-    { serbian: "Da li mogu da dobijem jednu kesu?", english: "Can I get one shopping bag?" },
-    { serbian: "Gde mogu da nadjem jaja?", english: "Where can I find the eggs?" },
+    { serbian: "Gde je sala za sastanke?", english: "Where is the meeting room?" },
+    { serbian: "Kada počinje sastanak?", english: "When does the meeting start?" },
+    { serbian: "Kasnim, izvinite.", english: "I'm running late, sorry." },
+    { serbian: "Trebam pomoć oko projekta.", english: "I need help with the project." },
 ];
 
 const dialogue = [
-    { speaker: "Grocery store worker", text: "Dobar dan, kako mogu da vam pomognem?", english: "Hello, how can I help you?" },
-    { speaker: "You", text: "Trazim sredstva za ciscenje", english: "I'm looking for cleaning supplies" },
-    { speaker: "Grocery store worker", text: "Sredstva za ciscenje se nalaze u redu I2", english: "Cleaning supplies are in row I2." },
-    { speaker: "You", text: "Hvala", english: "Thank you." },
-    { speaker: "Grocery store worker", text: "Dovidjenja", english: "Goodbye." },
-    { speaker: "You", text: "Prijatno", english: "Have a nice day" },
+    { speaker: "Coworker", text: "Hej, da li si završila prezentaciju?", english: "Hey, did you finish the presentation?" },
+    { speaker: "You", text: "Skoro, radim na poslednjem slajdu.", english: "Almost, I'm working on the last slide." },
+    { speaker: "Coworker", text: "Super, sastanak počinje za deset minuta.", english: "Great, the meeting starts in ten minutes." },
+    { speaker: "You", text: "Biću spremna.", english: "I’ll be ready." },
+    { speaker: "Coworker", text: "Ako ti treba pomoć, reci.", english: "If you need help, let me know." },
+    { speaker: "You", text: "Hvala, cenim to.", english: "Thanks, I appreciate it." },
 ];
 
 const listeningQuestions = [
     {
-        prompt: "Gde se nalazi hleb?",
-        promptEnglish: "Where is the bread?",
+        prompt: "Kada počinje sastanak?",
+        promptEnglish: "When does the meeting start?",
         options: [
-            { text: "U trećoj polici.", english: "On the third shelf." },
-            { text: "Na kasi.", english: "At the checkout." },
-            { text: "Napolju.", english: "Outside." },
+            { text: "Za deset minuta.", english: "In ten minutes." },
+            { text: "Juče.", english: "Yesterday." },
+            { text: "Nikada.", english: "Never." },
         ],
         correct: 0,
     },
     {
-        prompt: "Da li želite kesu?",
-        promptEnglish: "Would you like a bag?",
+        prompt: "Šta treba da uradiš danas?",
+        promptEnglish: "What do you need to do today?",
         options: [
-            { text: "Da, molim.", english: "Yes, please." },
-            { text: "Ne znam.", english: "I don't know." },
-            { text: "Možda kasnije.", english: "Maybe later." },
+            { text: "Da završim izveštaj.", english: "Finish the report." },
+            { text: "Da kupim hleb.", english: "Buy bread." },
+            { text: "Da idem na plažu.", english: "Go to the beach." },
         ],
         correct: 0,
     },
     {
-        prompt: "Kako kažete 'receipt' na srpskom?",
-        promptEnglish: "How do you say 'receipt' in Serbian?",
+        prompt: "Kako kažete 'boss' na srpskom?",
+        promptEnglish: "How do you say 'boss' in Serbian?",
         options: [
-            { text: "Račun.", english: "Receipt." },
-            { text: "Kesa.", english: "Bag." },
-            { text: "Popust.", english: "Discount." },
+            { text: "Šef.", english: "Boss." },
+            { text: "Kolega.", english: "Coworker." },
+            { text: "Projekat.", english: "Project." },
         ],
         correct: 0,
     },
     {
-        prompt: "Šta znači 'akcija'?",
-        promptEnglish: "What does 'akcija' mean?",
+        prompt: "Šta znači 'rok'?",
+        promptEnglish: "What does 'rok' mean?",
         options: [
-            { text: "Popust", english: "Discount" },
-            { text: "Kasa", english: "Cash register" },
-            { text: "Torba", english: "Bag" },
+            { text: "Deadline", english: "Deadline" },
+            { text: "Meeting", english: "Meeting" },
+            { text: "Office", english: "Office" },
         ],
         correct: 0,
     },
     {
-        prompt: "Kako kažete 'shopping cart' na srpskom?",
-        promptEnglish: "How do you say 'shopping cart' in Serbian?",
+        prompt: "Kako kažete 'presentation' na srpskom?",
+        promptEnglish: "How do you say 'presentation' in Serbian?",
         options: [
-            { text: "Kolica", english: "Cart" },
-            { text: "Prodavnica", english: "Store" },
-            { text: "Polica", english: "Shelf" },
+            { text: "Prezentacija", english: "Presentation" },
+            { text: "Izveštaj", english: "Report" },
+            { text: "Sastanak", english: "Meeting" },
         ],
         correct: 0,
     }
@@ -179,35 +179,36 @@ const listeningQuestions = [
 
 const quizQuestions = [
     {
-        question: "What does 'kasa' mean?",
-        options: ["Shelf", "Cash register", "Bag", "Fruit"],
-        correct: 1,
-        serbian: "Kasa",
+        question: "What does 'izveštaj' mean?",
+        options: ["Report", "Meeting", "Boss", "Office"],
+        correct: 0,
+        serbian: "Izveštaj",
     },
     {
-        question: "How do you say 'bag' in Serbian?",
-        options: ["Kesa", "Kolica", "Račun", "Sok"],
+        question: "How do you say 'coworker' in Serbian?",
+        options: ["Kolega", "Šef", "Projekat", "Sastanak"],
         correct: 0,
-        serbian: "Kesa",
+        serbian: "Kolega",
     },
     {
-        question: "What does 'povrće' mean?",
-        options: ["Vegetables", "Fruit", "Meat", "Bread"],
+        question: "What does 'rok' mean?",
+        options: ["Deadline", "Presentation", "Office", "Project"],
         correct: 0,
-        serbian: "Povrće",
+        serbian: "Rok",
     },
     {
-        question: "How do you say 'shopping cart' in Serbian?",
-        options: ["Kolica", "Karta", "Torba", "Kutija"],
+        question: "How do you say 'meeting' in Serbian?",
+        options: ["Sastanak", "Izveštaj", "Kancelarija", "Prezentacija"],
         correct: 0,
-        serbian: "Kolica",
+        serbian: "Sastanak",
     },
 ];
 
 
+
 const PASSING_PERCENT = 80;
-const QUIZ_ATTEMPTS_KEY = "bllp-serbian-lesson-5-attempts";
-const LISTENING_ATTEMPTS_KEY = "bllp-serbian-lesson-5-listening-attempts";
+const QUIZ_ATTEMPTS_KEY = "bllp-serbian-lesson-11-attempts";
+const LISTENING_ATTEMPTS_KEY = "bllp-serbian-lesson-11-listening-attempts";
 
 interface QuizAttempt {
     score: number;
@@ -235,7 +236,7 @@ function loadListeningCompletedDate(): string | null {
     }
 }
 
-const STORAGE_KEY = "bllp-serbian-lesson-5";
+const STORAGE_KEY = "bllp-serbian-lesson-11";
 
 const sectionLabels = [
     "Vocabulary",
@@ -258,22 +259,22 @@ function loadProgress(): number {
 
 const aiPrompts = [
     {
-        ai: "Da li vam treba pomoć?",
-        aiEnglish: "Do you need any help?",
-        expected: "Da, tražim mleko.",
-        expectedEnglish: "Yes, I'm looking for milk.",
+        ai: "Da li ste završili izveštaj?",
+        aiEnglish: "Have you finished the report?",
+        expected: "Da, upravo sam ga završila.",
+        expectedEnglish: "Yes, I just finished it.",
     },
     {
-        ai: "Da li želite kesu?",
-        aiEnglish: "Would you like a bag?",
-        expected: "Da, molim jednu.",
-        expectedEnglish: "Yes, one please.",
+        ai: "Da li vam treba pomoć oko projekta?",
+        aiEnglish: "Do you need help with the project?",
+        expected: "Da, treba mi pomoć sa prezentacijom.",
+        expectedEnglish: "Yes, I need help with the presentation.",
     },
     {
-        ai: "Da li imate karticu za popust?",
-        aiEnglish: "Do you have a discount card?",
-        expected: "Ne, nemam.",
-        expectedEnglish: "No, I don't.",
+        ai: "Možemo li da imamo kratak sastanak?",
+        aiEnglish: "Can we have a quick meeting?",
+        expected: "Naravno, imam vremena.",
+        expectedEnglish: "Of course, I have time.",
     },
 ];
 
@@ -469,7 +470,7 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
     );
 }
 
-export default function SerbianLesson5Page() {
+export default function SerbianLesson11Page() {
     const [mounted, setMounted] = useState(false);
     const [currentSection, setCurrentSection] = useState(0);
     const [highestReached, setHighestReached] = useState(0);
@@ -578,10 +579,10 @@ export default function SerbianLesson5Page() {
                     </div>
                     <div>
                         <h1 className="font-display text-2xl font-bold tracking-tight">
-                            Lesson 5 — At a Grocery Store
+                            Lesson 11 — At Work
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Focus: Asking questions about working hours and communicating with the workers.
+                            Focus: Meetings, tasks, and colleagues. 
                         </p>
                     </div>
                 </div>

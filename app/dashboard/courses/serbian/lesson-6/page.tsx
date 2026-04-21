@@ -97,117 +97,115 @@ async function speak(
 }
 
 const vocabulary = [
-    { serbian: "Prodavnica", english: "Grocery store" },
-    { serbian: "Voće", english: "Fruits" },
-    { serbian: "Hrana", english: "Food" },
-    { serbian: "Povrće", english: "Vegetables" },
-    { serbian: "Jaja", english: "Eggs" },
-    { serbian: "Sredstva za čišćenje", english: "Cleaning supplies" },
-    { serbian: "Kolica", english: "Shopping cart" },
-    { serbian: "Kesa", english: "Bag" },
+    { serbian: "Autobuska stanica", english: "Bus station" },
+    { serbian: "Stanica", english: "Stop" },
+    { serbian: "Autobus", english: "Bus" },
+    { serbian: "Karta", english: "Ticket" },
+    { serbian: "Vozač", english: "Driver" },
+    { serbian: "Red vožnje", english: "Timetable" },
+    { serbian: "Kasni", english: "Running late" },
+    { serbian: "Pravac", english: "Direction" },
 ];
 
 const keySentences = [
-    { serbian: "Gde se nalazi prodavnica?", english: "Where is the grocery store?" },
-    { serbian: "U koliko seti se otvara prodavnica?", english: "What time does the store open?" },
-    { serbian: "Da li mogu da dobijem jednu kesu?", english: "Can I get one shopping bag?" },
-    { serbian: "Gde mogu da nadjem jaja?", english: "Where can I find the eggs?" },
+    { serbian: "Gde je autobuska stanica?", english: "Where is the bus station?" },
+    { serbian: "Kada stiže sledeći autobus?", english: "When does the next bus arrive?" },
+    { serbian: "Da li ovaj autobus ide do centra?", english: "Does this bus go to downtown?" },
+    { serbian: "Koliko košta karta?", english: "How much is the ticket?" },
 ];
 
 const dialogue = [
-    { speaker: "Grocery store worker", text: "Dobar dan, kako mogu da vam pomognem?", english: "Hello, how can I help you?" },
-    { speaker: "You", text: "Trazim sredstva za ciscenje", english: "I'm looking for cleaning supplies" },
-    { speaker: "Grocery store worker", text: "Sredstva za ciscenje se nalaze u redu I2", english: "Cleaning supplies are in row I2." },
-    { speaker: "You", text: "Hvala", english: "Thank you." },
-    { speaker: "Grocery store worker", text: "Dovidjenja", english: "Goodbye." },
-    { speaker: "You", text: "Prijatno", english: "Have a nice day" },
+    { speaker: "Person at bus stop", text: "Dobar dan, da li znate kada stiže autobus?", english: "Hello, do you know when the bus arrives?" },
+    { speaker: "You", text: "Mislim da stiže za nekoliko minuta.", english: "I think it arrives in a few minutes." },
+    { speaker: "Person at bus stop", text: "Da li ide do centra?", english: "Does it go to downtown?" },
+    { speaker: "You", text: "Da, ide pravo do centra.", english: "Yes, it goes straight to downtown." },
+    { speaker: "Person at bus stop", text: "Hvala vam!", english: "Thank you!" },
+    { speaker: "You", text: "Nema na čemu.", english: "You're welcome." },
 ];
 
 const listeningQuestions = [
     {
-        prompt: "Gde se nalazi hleb?",
-        promptEnglish: "Where is the bread?",
+        prompt: "Kada stiže autobus?",
+        promptEnglish: "When does the bus arrive?",
         options: [
-            { text: "U trećoj polici.", english: "On the third shelf." },
-            { text: "Na kasi.", english: "At the checkout." },
-            { text: "Napolju.", english: "Outside." },
-        ],
-        correct: 0,
-    },
-    {
-        prompt: "Da li želite kesu?",
-        promptEnglish: "Would you like a bag?",
-        options: [
-            { text: "Da, molim.", english: "Yes, please." },
+            { text: "Za pet minuta.", english: "In five minutes." },
+            { text: "Juče.", english: "Yesterday." },
             { text: "Ne znam.", english: "I don't know." },
-            { text: "Možda kasnije.", english: "Maybe later." },
         ],
         correct: 0,
     },
     {
-        prompt: "Kako kažete 'receipt' na srpskom?",
-        promptEnglish: "How do you say 'receipt' in Serbian?",
+        prompt: "Da li ovaj autobus ide do centra?",
+        promptEnglish: "Does this bus go to downtown?",
         options: [
-            { text: "Račun.", english: "Receipt." },
-            { text: "Kesa.", english: "Bag." },
-            { text: "Popust.", english: "Discount." },
+            { text: "Da, ide.", english: "Yes, it does." },
+            { text: "Ne jedem.", english: "I don't eat." },
+            { text: "Možda sutra.", english: "Maybe tomorrow." },
         ],
         correct: 0,
     },
     {
-        prompt: "Šta znači 'akcija'?",
-        promptEnglish: "What does 'akcija' mean?",
+        prompt: "Kako kažete 'ticket' na srpskom?",
+        promptEnglish: "How do you say 'ticket' in Serbian?",
         options: [
-            { text: "Popust", english: "Discount" },
-            { text: "Kasa", english: "Cash register" },
-            { text: "Torba", english: "Bag" },
+            { text: "Karta.", english: "Ticket." },
+            { text: "Stanica.", english: "Stop." },
+            { text: "Vozač.", english: "Driver." },
         ],
         correct: 0,
     },
     {
-        prompt: "Kako kažete 'shopping cart' na srpskom?",
-        promptEnglish: "How do you say 'shopping cart' in Serbian?",
+        prompt: "Šta znači 'red vožnje'?",
+        promptEnglish: "What does 'red vožnje' mean?",
         options: [
-            { text: "Kolica", english: "Cart" },
-            { text: "Prodavnica", english: "Store" },
-            { text: "Polica", english: "Shelf" },
+            { text: "Timetable", english: "Timetable" },
+            { text: "Bus", english: "Bus" },
+            { text: "Road", english: "Road" },
+        ],
+        correct: 0,
+    },
+    {
+        prompt: "Kako kažete 'bus driver' na srpskom?",
+        promptEnglish: "How do you say 'bus driver' in Serbian?",
+        options: [
+            { text: "Vozač autobusa", english: "Bus driver" },
+            { text: "Putnik", english: "Passenger" },
+            { text: "Karta", english: "Ticket" },
         ],
         correct: 0,
     }
 ];
 
-
 const quizQuestions = [
     {
-        question: "What does 'kasa' mean?",
-        options: ["Shelf", "Cash register", "Bag", "Fruit"],
+        question: "What does 'stanica' mean?",
+        options: ["Station/Stop", "Ticket", "Driver", "Road"],
+        correct: 0,
+        serbian: "Stanica",
+    },
+    {
+        question: "How do you say 'ticket' in Serbian?",
+        options: ["Karta", "Vozač", "Autobus", "Putnik"],
+        correct: 0,
+        serbian: "Karta",
+    },
+    {
+        question: "What does 'vozač' mean?",
+        options: ["Passenger", "Driver", "Bus", "Schedule"],
         correct: 1,
-        serbian: "Kasa",
+        serbian: "Vozač",
     },
     {
-        question: "How do you say 'bag' in Serbian?",
-        options: ["Kesa", "Kolica", "Račun", "Sok"],
+        question: "How do you say 'timetable' in Serbian?",
+        options: ["Red vožnje", "Stanica", "Pravac", "Karta"],
         correct: 0,
-        serbian: "Kesa",
-    },
-    {
-        question: "What does 'povrće' mean?",
-        options: ["Vegetables", "Fruit", "Meat", "Bread"],
-        correct: 0,
-        serbian: "Povrće",
-    },
-    {
-        question: "How do you say 'shopping cart' in Serbian?",
-        options: ["Kolica", "Karta", "Torba", "Kutija"],
-        correct: 0,
-        serbian: "Kolica",
+        serbian: "Red vožnje",
     },
 ];
 
-
 const PASSING_PERCENT = 80;
-const QUIZ_ATTEMPTS_KEY = "bllp-serbian-lesson-5-attempts";
-const LISTENING_ATTEMPTS_KEY = "bllp-serbian-lesson-5-listening-attempts";
+const QUIZ_ATTEMPTS_KEY = "bllp-serbian-lesson-6-attempts";
+const LISTENING_ATTEMPTS_KEY = "bllp-serbian-lesson-6-listening-attempts";
 
 interface QuizAttempt {
     score: number;
@@ -235,7 +233,7 @@ function loadListeningCompletedDate(): string | null {
     }
 }
 
-const STORAGE_KEY = "bllp-serbian-lesson-5";
+const STORAGE_KEY = "bllp-serbian-lesson-6";
 
 const sectionLabels = [
     "Vocabulary",
@@ -260,22 +258,23 @@ const aiPrompts = [
     {
         ai: "Da li vam treba pomoć?",
         aiEnglish: "Do you need any help?",
-        expected: "Da, tražim mleko.",
-        expectedEnglish: "Yes, I'm looking for milk.",
+        expected: "Da, tražim autobus za centar.",
+        expectedEnglish: "Yes, I'm looking for the bus to downtown.",
     },
     {
-        ai: "Da li želite kesu?",
-        aiEnglish: "Would you like a bag?",
-        expected: "Da, molim jednu.",
-        expectedEnglish: "Yes, one please.",
+        ai: "Da li znate kada stiže autobus?",
+        aiEnglish: "Do you know when the bus arrives?",
+        expected: "Mislim za pet minuta.",
+        expectedEnglish: "I think in five minutes.",
     },
     {
-        ai: "Da li imate karticu za popust?",
-        aiEnglish: "Do you have a discount card?",
-        expected: "Ne, nemam.",
-        expectedEnglish: "No, I don't.",
+        ai: "Da li idete istim pravcem?",
+        aiEnglish: "Are you going the same direction?",
+        expected: "Da, čekam isti autobus.",
+        expectedEnglish: "Yes, I'm waiting for the same bus.",
     },
 ];
+
 
 
 function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
@@ -469,7 +468,7 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
     );
 }
 
-export default function SerbianLesson5Page() {
+export default function SerbianLesson6Page() {
     const [mounted, setMounted] = useState(false);
     const [currentSection, setCurrentSection] = useState(0);
     const [highestReached, setHighestReached] = useState(0);
@@ -578,10 +577,10 @@ export default function SerbianLesson5Page() {
                     </div>
                     <div>
                         <h1 className="font-display text-2xl font-bold tracking-tight">
-                            Lesson 5 — At a Grocery Store
+                            Lesson 6 — At the Bus Stop
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Focus: Asking questions about working hours and communicating with the workers.
+                            Focus: Questions and phrases used when in public transport.
                         </p>
                     </div>
                 </div>

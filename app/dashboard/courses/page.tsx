@@ -29,7 +29,7 @@ const allCourses: Course[] = [
   { name: "Turkish", flag: "🇹🇷", lessons: 15, level: "Beginner" },
   { name: "Italian", flag: "🇮🇹", lessons: 15, level: "Beginner" },
   { name: "Portuguese", flag: "🇵🇹", lessons: 15, level: "Beginner" },
-  { name: "Serbian", flag: "🇷🇸", lessons: 15, level: "Beginner" },
+  { name: "Serbian", flag: "🇷🇸", lessons: 16, level: "Beginner" },
   { name: "Persian", flag: "🇮🇷", lessons: 15, level: "Beginner" },
   { name: "Hindi", flag: "🇮🇳", lessons: 15, level: "Beginner" },
   { name: "Russian", flag: "🇷🇺", lessons: 15, level: "Beginner" },
