@@ -97,117 +97,117 @@ async function speak(
 }
 
 const vocabulary = [
-    { serbian: "Restoran", english: "Restaurant" },
-    { serbian: "Jelovnik", english: "Menu" },
+    { serbian: "Prodavnica", english: "Grocery store" },
+    { serbian: "Voće", english: "Fruits" },
     { serbian: "Hrana", english: "Food" },
-    { serbian: "Piće", english: "Drink" },
-    { serbian: "Voda", english: "Water" },
-    { serbian: "Račun", english: "Receipt" },
-    { serbian: "Konobar", english: "Waiter" },
-    { serbian: "Bakšiš", english: "Tip" },
+    { serbian: "Povrće", english: "Vegetables" },
+    { serbian: "Jaja", english: "Eggs" },
+    { serbian: "Sredstva za čišćenje", english: "Cleaning supplies" },
+    { serbian: "Kolica", english: "Shopping cart" },
+    { serbian: "Kesa", english: "Bag" },
 ];
 
 const keySentences = [
-    { serbian: "Mogu da vidim jelovnik?", english: "Can I see the menu?" },
-    { serbian: "Želim ovo.", english: "I want this." },
-    { serbian: "Da li mogu da dobijem vodu?", english: "Can I get some water?" },
-    { serbian: "Račun, molim.", english: "The receipt, please." },
+    { serbian: "Gde se nalazi prodavnica?", english: "Where is the grocery store?" },
+    { serbian: "U koliko seti se otvara prodavnica?", english: "What time does the store open?" },
+    { serbian: "Da li mogu da dobijem jednu kesu?", english: "Can I get one shopping bag?" },
+    { serbian: "Gde mogu da nadjem jaja?", english: "Where can I find the eggs?" },
 ];
 
 const dialogue = [
-    { speaker: "Waiter", text: "Dobar dan, šta želite?", english: "Hello, what would you like?" },
-    { speaker: "You", text: "Želim piletinu i krompir", english: "I want chicken and fries." },
-    { speaker: "Waiter", text: "Da li želite nešto za piće?", english: "Would you like something to drink?" },
-    { speaker: "You", text: "Vodu, molim.", english: "Water, please." },
-    { speaker: "Waiter", text: "U redu.", english: "Alright." },
-    { speaker: "You", text: "Hvala.", english: "Thank you." },
+    { speaker: "Grocery store worker", text: "Dobar dan, kako mogu da vam pomognem?", english: "Hello, how can I help you?" },
+    { speaker: "You", text: "Trazim sredstva za ciscenje", english: "I'm looking for cleaning supplies" },
+    { speaker: "Grocery store worker", text: "Sredstva za ciscenje se nalaze u redu I2", english: "Cleaning supplies are in row I2." },
+    { speaker: "You", text: "Hvala", english: "Thank you." },
+    { speaker: "Grocery store worker", text: "Dovidjenja", english: "Goodbye." },
+    { speaker: "You", text: "Prijatno", english: "Have a nice day" },
 ];
 
 const listeningQuestions = [
     {
-        prompt: "Šta želite da naručite?",
-        promptEnglish: "What would you like to order?",
+        prompt: "Gde se nalazi hleb?",
+        promptEnglish: "Where is the bread?",
         options: [
-            { text: "Piletinu i krompir", english: "Chicken and fries." },
-            { text: "Vodu, molim.", english: "Water, please." },
-            { text: "Hvala.", english: "Thanks." },
+            { text: "U trećoj polici.", english: "On the third shelf." },
+            { text: "Na kasi.", english: "At the checkout." },
+            { text: "Napolju.", english: "Outside." },
         ],
         correct: 0,
     },
     {
-        prompt: "Da li želite nešto za piće?",
-        promptEnglish: "Would you like something to drink?",
+        prompt: "Da li želite kesu?",
+        promptEnglish: "Would you like a bag?",
         options: [
-            { text: "Vodu, molim.", english: "Water, please." },
+            { text: "Da, molim.", english: "Yes, please." },
             { text: "Ne znam.", english: "I don't know." },
-            { text: "Kasnije.", english: "Later." },
+            { text: "Možda kasnije.", english: "Maybe later." },
         ],
         correct: 0,
     },
-
     {
-        prompt: "Kako kažete 'thank you' na srpskom?",
-        promptEnglish: "How do you say 'thank you' in Serbian?",
+        prompt: "Kako kažete 'receipt' na srpskom?",
+        promptEnglish: "How do you say 'receipt' in Serbian?",
         options: [
-            { text: "Hvala.", english: "Thank you." },
-            { text: "Molim.", english: "Please." },
-            { text: "Izvinite.", english: "Excuse me." },
+            { text: "Račun.", english: "Receipt." },
+            { text: "Kesa.", english: "Bag." },
+            { text: "Popust.", english: "Discount." },
         ],
         correct: 0,
     },
-
     {
-        prompt: "Šta znači 'bakšiš'?",
-        promptEnglish: "What does '' mean?",
+        prompt: "Šta znači 'akcija'?",
+        promptEnglish: "What does 'akcija' mean?",
         options: [
-            { text: "Naplatna karta", english: "Receipt" },
-            { text: "Bakšiš", english: "Tip" },
-            { text: "Račun", english: "Bill" },
+            { text: "Popust", english: "Discount" },
+            { text: "Kasa", english: "Cash register" },
+            { text: "Torba", english: "Bag" },
         ],
-        correct: 1,
+        correct: 0,
     },
-
     {
-        prompt: "Kako kažete 'menu' na srpskom?",
-        promptEnglish: "How do you say 'menu' in Serbian?",
+        prompt: "Kako kažete 'shopping cart' na srpskom?",
+        promptEnglish: "How do you say 'shopping cart' in Serbian?",
         options: [
-            { text: "Jelovnik", english: "Menu" },
-            { text: "Restoran", english: "Restaurant" },
-            { text: "Hrana", english: "Food" },
+            { text: "Kolica", english: "Cart" },
+            { text: "Prodavnica", english: "Store" },
+            { text: "Polica", english: "Shelf" },
         ],
+        correct: 0,
     }
 ];
 
+
 const quizQuestions = [
     {
-        question: "What does 'hleb' mean?",
-        options: ["Milk", "Bread", "Fruit", "Water"],
+        question: "What does 'kasa' mean?",
+        options: ["Shelf", "Cash register", "Bag", "Fruit"],
         correct: 1,
-        serbian: "Hleb",
-    },
-    {
-        question: "How do you say 'milk' in Serbian?",
-        options: ["Meso", "Voda", "Mleko", "Sok"],
-        correct: 2,
-        serbian: "Mleko",
-    },
-    {
-        question: "What does 'voće' mean?",
-        options: ["Vegetables", "Fruit", "Meat", "Bread"],
-        correct: 1,
-        serbian: "Voće",
-    },
-    {
-        question: "How do you say 'cash register' in Serbian?",
-        options: ["Kasa", "Sto", "Torba", "Karta"],
-        correct: 0,
         serbian: "Kasa",
+    },
+    {
+        question: "How do you say 'bag' in Serbian?",
+        options: ["Kesa", "Kolica", "Račun", "Sok"],
+        correct: 0,
+        serbian: "Kesa",
+    },
+    {
+        question: "What does 'povrće' mean?",
+        options: ["Vegetables", "Fruit", "Meat", "Bread"],
+        correct: 0,
+        serbian: "Povrće",
+    },
+    {
+        question: "How do you say 'shopping cart' in Serbian?",
+        options: ["Kolica", "Karta", "Torba", "Kutija"],
+        correct: 0,
+        serbian: "Kolica",
     },
 ];
 
+
 const PASSING_PERCENT = 80;
-const QUIZ_ATTEMPTS_KEY = "bllp-serbian-lesson-4-attempts";
-const LISTENING_ATTEMPTS_KEY = "bllp-serbian-lesson-4-listening-attempts";
+const QUIZ_ATTEMPTS_KEY = "bllp-serbian-lesson-5-attempts";
+const LISTENING_ATTEMPTS_KEY = "bllp-serbian-lesson-5-listening-attempts";
 
 interface QuizAttempt {
     score: number;
@@ -235,7 +235,7 @@ function loadListeningCompletedDate(): string | null {
     }
 }
 
-const STORAGE_KEY = "bllp-serbian-lesson-4";
+const STORAGE_KEY = "bllp-serbian-lesson-5";
 
 const sectionLabels = [
     "Vocabulary",
@@ -258,24 +258,25 @@ function loadProgress(): number {
 
 const aiPrompts = [
     {
-        ai: "Da li ste spremni da naručite?",
-        aiEnglish: "Are you ready to order?",
-        expected: "Da, želim piletinu.",
-        expectedEnglish: "Yes, I want chicken.",
+        ai: "Da li vam treba pomoć?",
+        aiEnglish: "Do you need any help?",
+        expected: "Da, tražim mleko.",
+        expectedEnglish: "Yes, I'm looking for milk.",
     },
     {
-        ai: "Šta želite za piće?",
-        aiEnglish: "What would you like to drink?",
-        expected: "Vodu, molim.",
-        expectedEnglish: "Water, please.",
+        ai: "Da li želite kesu?",
+        aiEnglish: "Would you like a bag?",
+        expected: "Da, molim jednu.",
+        expectedEnglish: "Yes, one please.",
     },
     {
-        ai: "Da li želite još nešto?",
-        aiEnglish: "Would you like anything else?",
-        expected: "Ne, hvala.",
-        expectedEnglish: "No, thank you.",
+        ai: "Da li imate karticu za popust?",
+        aiEnglish: "Do you have a discount card?",
+        expected: "Ne, nemam.",
+        expectedEnglish: "No, I don't.",
     },
 ];
+
 
 function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
     const [messages, setMessages] = useState<
@@ -468,7 +469,7 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
     );
 }
 
-export default function SerbianLesson4Page() {
+export default function SerbianLesson5Page() {
     const [mounted, setMounted] = useState(false);
     const [currentSection, setCurrentSection] = useState(0);
     const [highestReached, setHighestReached] = useState(0);
@@ -577,10 +578,10 @@ export default function SerbianLesson4Page() {
                     </div>
                     <div>
                         <h1 className="font-display text-2xl font-bold tracking-tight">
-                            Lesson 4 — At a Restaurant
+                            Lesson 5 — At a Grocery Store
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Focus: Ordering food, common phrases, and a mini dialogue.
+                            Focus: Asking questions about working hours and communicating with the workers.
                         </p>
                     </div>
                 </div>
