@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -16,7 +16,8 @@ import {
   Volume2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getTopicMetaById, SupportedLanguage } from "./topic-lessons";
+import { SupportedLanguage } from "./topic-lessons";
+import type { LessonContent } from "@/app/lib/lesson-data-types";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -102,243 +103,6 @@ async function speak(
   }
 }
 
-function trTemplates(place: string, terms: string[], enTerms: string[]) {
-  const [t1, t2, t3, t4, t5, t6] = terms;
-  const [e1, e2, e3, e4, e5, e6] = enTerms;
-  return {
-    vocabulary: terms.map((w, i) => ({ local: w, english: enTerms[i] ?? enTerms[0] })),
-    keySentences: [
-      {
-        local: `${place} için ${t1} nerede?`,
-        english: `Where is the ${e1} for the ${place}?`,
-        answerLocal: `${t1} sağ tarafta.`,
-        answerEnglish: `The ${e1} is on the right side.`,
-      },
-      {
-        local: `${t2} alabilir miyim?`,
-        english: `Can I get a ${e2}?`,
-        answerLocal: `Evet, hemen hazırlıyorum.`,
-        answerEnglish: `Yes, I will prepare it right away.`,
-      },
-      {
-        local: `${t3} saat kaçta başlıyor?`,
-        english: `What time does ${e3} start?`,
-        answerLocal: `${t3} saat üçte başlıyor.`,
-        answerEnglish: `${e3} starts at 3 o'clock.`,
-      },
-      {
-        local: `${t4} hakkında yardımcı olur musunuz?`,
-        english: `Can you help with ${e4}?`,
-        answerLocal: `Tabii, birlikte kontrol edelim.`,
-        answerEnglish: `Of course, let's check together.`,
-      },
-      {
-        local: `${t5} var mı?`,
-        english: `Do you have ${e5}?`,
-        answerLocal: `Evet, burada mevcut.`,
-        answerEnglish: `Yes, it is available here.`,
-      },
-      {
-        local: `Teşekkürler, ${t6} için ne yapmalıyım?`,
-        english: `Thanks, what should I do for ${e6}?`,
-        answerLocal: `Lütfen şu sırayı takip edin.`,
-        answerEnglish: `Please follow this order.`,
-      },
-    ],
-    dialogue: [
-      { speaker: "Staff", local: `Merhaba, ${place} hoş geldiniz.`, english: `Hello, welcome to the ${place}.` },
-      { speaker: "You", local: `${t1} hakkında bilgi alabilir miyim?`, english: `Can I get information about ${e1}?` },
-      { speaker: "Staff", local: `Tabii, ${t1} bu tarafta.`, english: `Sure, the ${e1} is on this side.` },
-      { speaker: "You", local: `${t2} almak istiyorum.`, english: `I want to get ${e2}.` },
-      { speaker: "Staff", local: `Tamam, hemen yardımcı oluyorum.`, english: `Okay, I will help right away.` },
-      { speaker: "You", local: `Çok teşekkür ederim.`, english: `Thank you very much.` },
-    ],
-    listening: [
-      {
-        prompt: `${t1} nerede?`,
-        promptEnglish: `Where is the ${e1}?`,
-        options: [
-          { local: `${t1} sağ tarafta.`, english: `The ${e1} is on the right side.` },
-          { local: `Bilmiyorum.`, english: `I don't know.` },
-          { local: `Daha sonra gelin.`, english: `Come later.` },
-        ],
-        correct: 0,
-      },
-      {
-        prompt: `${t2} alabilir miyim?`,
-        promptEnglish: `Can I get ${e2}?`,
-        options: [
-          { local: `Evet, tabii.`, english: `Yes, of course.` },
-          { local: `Hayır, kapalı.`, english: `No, it's closed.` },
-          { local: `Belki yarın.`, english: `Maybe tomorrow.` },
-        ],
-        correct: 0,
-      },
-      {
-        prompt: `${t3} saat kaçta?`,
-        promptEnglish: `What time is ${e3}?`,
-        options: [
-          { local: `Saat üçte.`, english: `At 3 o'clock.` },
-          { local: `Bugün değil.`, english: `Not today.` },
-          { local: `Hiç yok.`, english: `There isn't any.` },
-        ],
-        correct: 0,
-      },
-    ],
-    speakingPrompts: [
-      {
-        ai: `Merhaba. ${place} için ilk sorunuz nedir?`,
-        aiEnglish: `Hello. What's your first question for the ${place}?`,
-        expected: `${t1} nerede?`,
-        expectedEnglish: `Where is the ${e1}?`,
-      },
-      {
-        ai: `${t2} ile ilgili ne söylersiniz?`,
-        aiEnglish: `What would you say about ${e2}?`,
-        expected: `${t2} alabilir miyim?`,
-        expectedEnglish: `Can I get ${e2}?`,
-      },
-      {
-        ai: `${t3} saatini sorar mısınız?`,
-        aiEnglish: `Can you ask the time for ${e3}?`,
-        expected: `${t3} saat kaçta?`,
-        expectedEnglish: `What time is ${e3}?`,
-      },
-    ],
-  };
-}
-
-function faTemplates(place: string, terms: string[], enTerms: string[]) {
-  const [t1, t2, t3, t4, t5, t6] = terms;
-  const [e1, e2, e3, e4, e5, e6] = enTerms;
-  return {
-    vocabulary: terms.map((w, i) => ({ local: w, english: enTerms[i] ?? enTerms[0] })),
-    keySentences: [
-      {
-        local: `برای ${place} ${t1} کجاست؟`,
-        english: `Where is the ${e1} for the ${place}?`,
-        answerLocal: `${t1} سمت راست است.`,
-        answerEnglish: `The ${e1} is on the right side.`,
-      },
-      {
-        local: `می‌توانم ${t2} بگیرم؟`,
-        english: `Can I get ${e2}?`,
-        answerLocal: `بله، همین الان آماده می‌کنم.`,
-        answerEnglish: `Yes, I will prepare it right now.`,
-      },
-      {
-        local: `${t3} چه ساعتی شروع می‌شود؟`,
-        english: `What time does ${e3} start?`,
-        answerLocal: `${t3} ساعت سه شروع می‌شود.`,
-        answerEnglish: `${e3} starts at 3 o'clock.`,
-      },
-      {
-        local: `در مورد ${t4} کمک می‌کنید؟`,
-        english: `Can you help with ${e4}?`,
-        answerLocal: `حتما، با هم بررسی می‌کنیم.`,
-        answerEnglish: `Sure, we will check together.`,
-      },
-      {
-        local: `${t5} دارید؟`,
-        english: `Do you have ${e5}?`,
-        answerLocal: `بله، اینجا موجود است.`,
-        answerEnglish: `Yes, it is available here.`,
-      },
-      {
-        local: `ممنون، برای ${t6} چه کار کنم؟`,
-        english: `Thanks, what should I do for ${e6}?`,
-        answerLocal: `لطفا این مراحل را انجام دهید.`,
-        answerEnglish: `Please follow these steps.`,
-      },
-    ],
-    dialogue: [
-      { speaker: "Staff", local: `سلام، به ${place} خوش آمدید.`, english: `Hello, welcome to the ${place}.` },
-      { speaker: "You", local: `می‌توانم درباره ${t1} سوال کنم؟`, english: `Can I ask about ${e1}?` },
-      { speaker: "Staff", local: `بله، ${t1} این طرف است.`, english: `Yes, the ${e1} is this way.` },
-      { speaker: "You", local: `می‌خواهم ${t2} بگیرم.`, english: `I want to get ${e2}.` },
-      { speaker: "Staff", local: `حتما، الان کمک می‌کنم.`, english: `Sure, I will help now.` },
-      { speaker: "You", local: `خیلی ممنون.`, english: `Thank you very much.` },
-    ],
-    listening: [
-      {
-        prompt: `${t1} کجاست؟`,
-        promptEnglish: `Where is the ${e1}?`,
-        options: [
-          { local: `${t1} سمت راست است.`, english: `The ${e1} is on the right side.` },
-          { local: `نمی‌دانم.`, english: `I don't know.` },
-          { local: `بعدا بیایید.`, english: `Come later.` },
-        ],
-        correct: 0,
-      },
-      {
-        prompt: `می‌توانم ${t2} بگیرم؟`,
-        promptEnglish: `Can I get ${e2}?`,
-        options: [
-          { local: `بله، حتما.`, english: `Yes, of course.` },
-          { local: `خیر، بسته است.`, english: `No, it's closed.` },
-          { local: `شاید فردا.`, english: `Maybe tomorrow.` },
-        ],
-        correct: 0,
-      },
-      {
-        prompt: `${t3} چه ساعتی است؟`,
-        promptEnglish: `What time is ${e3}?`,
-        options: [
-          { local: `ساعت سه.`, english: `At 3 o'clock.` },
-          { local: `امروز نه.`, english: `Not today.` },
-          { local: `اصلا نیست.`, english: `There isn't any.` },
-        ],
-        correct: 0,
-      },
-    ],
-    speakingPrompts: [
-      {
-        ai: `سلام. اولین سوال شما برای ${place} چیست؟`,
-        aiEnglish: `Hello. What's your first question for the ${place}?`,
-        expected: `${t1} کجاست؟`,
-        expectedEnglish: `Where is the ${e1}?`,
-      },
-      {
-        ai: `درباره ${t2} چه می‌گویید؟`,
-        aiEnglish: `What would you say about ${e2}?`,
-        expected: `می‌توانم ${t2} بگیرم؟`,
-        expectedEnglish: `Can I get ${e2}?`,
-      },
-      {
-        ai: `ساعت ${t3} را بپرسید.`,
-        aiEnglish: `Ask the time for ${e3}.`,
-        expected: `${t3} چه ساعتی است؟`,
-        expectedEnglish: `What time is ${e3}?`,
-      },
-    ],
-  };
-}
-
-type GeneratedLesson = ReturnType<typeof trTemplates> & {
-  title: string;
-  description: string;
-};
-
-function getGeneratedLesson(id: number, language: SupportedLanguage): GeneratedLesson {
-  const meta = getTopicMetaById(id);
-  if (!meta) {
-    const fallback = getTopicMetaById(1)!;
-    const place = language === "tr" ? fallback.place.tr : fallback.place.fa;
-    const data =
-      language === "tr"
-        ? trTemplates(place, fallback.terms.tr, fallback.terms.en)
-        : faTemplates(place, fallback.terms.fa, fallback.terms.en);
-    return { ...data, title: fallback.title, description: fallback.description };
-  }
-
-  const place = language === "tr" ? meta.place.tr : meta.place.fa;
-  const data =
-    language === "tr"
-      ? trTemplates(place, meta.terms.tr, meta.terms.en)
-      : faTemplates(place, meta.terms.fa, meta.terms.en);
-  return { ...data, title: meta.title, description: meta.description };
-}
-
 function parseLessonSlug(slug: string): number | null {
   const match = /^lesson-(\d+)$/.exec(slug);
   if (!match) return null;
@@ -375,8 +139,78 @@ function SpeakingPracticeSection({
   const [promptIndex, setPromptIndex] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [listening, setListening] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [sttError, setSttError] = useState<string | null>(null);
   const [playingAiId, setPlayingAiId] = useState<string | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const levelRafRef = useRef<number | null>(null);
+  const maxLevelRef = useRef(0);
+  const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const MAX_RECORDING_MS = 30000;
+  const MIN_LEVEL_THRESHOLD = 0.01;
+
+  const teardownAudioMeter = () => {
+    if (levelRafRef.current !== null) {
+      cancelAnimationFrame(levelRafRef.current);
+      levelRafRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    setAudioLevel(0);
+  };
+
+  const stopMediaStream = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+    }
+    teardownAudioMeter();
+    if (autoStopTimerRef.current) {
+      clearTimeout(autoStopTimerRef.current);
+      autoStopTimerRef.current = null;
+    }
+  };
+
+  const applyTranscript = (result: string) => {
+    if (!result) return;
+    setTranscript(result);
+
+    const current = speakingPrompts[promptIndex];
+    const userMsg: { role: "ai" | "you"; text: string; english?: string } = {
+      role: "you",
+      text: result,
+    };
+
+    if (normalizeForCompare(result) === normalizeForCompare(current.expected)) {
+      userMsg.english = current.expectedEnglish;
+    }
+
+    const nextIndex = promptIndex + 1;
+    const newMessages = [...messages, userMsg];
+
+    if (nextIndex < speakingPrompts.length) {
+      newMessages.push({
+        role: "ai",
+        text: speakingPrompts[nextIndex].ai,
+        english: speakingPrompts[nextIndex].aiEnglish,
+      });
+      setPromptIndex(nextIndex);
+    }
+
+    setMessages(newMessages);
+    setShowHint(false);
+  };
 
   const handleSpeakAi = (id: string, text: string) => {
     if (playingAiId === id) {
@@ -392,58 +226,227 @@ function SpeakingPracticeSection({
     speak(text, langCode, () => setPlayingAiId(null));
   };
 
-  const startListening = () => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const stopRecordingAndTranscribe = () => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
+  };
 
-    if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Try Chrome.");
+  const startListening = async () => {
+    if (listening || transcribing) {
+      if (listening) stopRecordingAndTranscribe();
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = langCode;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    setListening(true);
     setTranscript("");
+    setSttError(null);
 
-    recognition.onresult = (event: any) => {
-      const result = event.results[0][0].transcript as string;
-      setTranscript(result);
-      setListening(false);
+    const supportsRecording =
+      typeof window !== "undefined" &&
+      typeof window.MediaRecorder !== "undefined" &&
+      !!navigator.mediaDevices?.getUserMedia;
 
-      const current = speakingPrompts[promptIndex];
-      const userMsg: { role: "ai" | "you"; text: string; english?: string } = {
-        role: "you",
-        text: result,
+    if (!supportsRecording) {
+      setSttError(
+        "Your browser does not support microphone recording. Try Chrome, Safari, or Edge."
+      );
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      mediaStreamRef.current = stream;
+
+      try {
+        const AudioCtx =
+          (window as any).AudioContext || (window as any).webkitAudioContext;
+        const audioContext: AudioContext = new AudioCtx();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 1024;
+        source.connect(analyser);
+        audioContextRef.current = audioContext;
+        analyserRef.current = analyser;
+        maxLevelRef.current = 0;
+
+        const buffer = new Float32Array(analyser.fftSize);
+        const tick = () => {
+          const a = analyserRef.current;
+          if (!a) return;
+          a.getFloatTimeDomainData(buffer);
+          let sumSquares = 0;
+          for (let i = 0; i < buffer.length; i++) {
+            sumSquares += buffer[i] * buffer[i];
+          }
+          const rms = Math.sqrt(sumSquares / buffer.length);
+          if (rms > maxLevelRef.current) maxLevelRef.current = rms;
+          setAudioLevel(rms);
+          levelRafRef.current = requestAnimationFrame(tick);
+        };
+        levelRafRef.current = requestAnimationFrame(tick);
+      } catch (meterErr) {
+        console.log("[stt] audio meter unavailable", meterErr);
+      }
+
+      const preferredTypes = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+        "audio/mp4",
+      ];
+      const mimeType = preferredTypes.find((t) =>
+        typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported
+          ? MediaRecorder.isTypeSupported(t)
+          : false
+      );
+
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       };
 
-      if (normalizeForCompare(result) === normalizeForCompare(current.expected)) {
-        userMsg.english = current.expectedEnglish;
-      }
+      recorder.onstop = async () => {
+        setListening(false);
+        const capturedMaxLevel = maxLevelRef.current;
+        stopMediaStream();
 
-      const nextIndex = promptIndex + 1;
-      const newMessages = [...messages, userMsg];
+        const chunks = audioChunksRef.current;
+        audioChunksRef.current = [];
+        if (!chunks.length) {
+          setSttError(
+            "No audio was captured. Please check your microphone and try again."
+          );
+          return;
+        }
 
-      if (nextIndex < speakingPrompts.length) {
-        newMessages.push({
-          role: "ai",
-          text: speakingPrompts[nextIndex].ai,
-          english: speakingPrompts[nextIndex].aiEnglish,
+        const blobType = recorder.mimeType || mimeType || "audio/webm";
+        const audioBlob = new Blob(chunks, { type: blobType });
+
+        const extension = blobType.includes("ogg")
+          ? "ogg"
+          : blobType.includes("mp4")
+            ? "m4a"
+            : "webm";
+
+        console.log("[stt] recorded blob", {
+          size: audioBlob.size,
+          type: blobType,
+          extension,
+          chunkCount: chunks.length,
+          maxLevel: capturedMaxLevel,
         });
-        setPromptIndex(nextIndex);
-      }
 
-      setMessages(newMessages);
-      setShowHint(false);
-    };
+        if (capturedMaxLevel > 0 && capturedMaxLevel < MIN_LEVEL_THRESHOLD) {
+          setSttError(
+            "Your mic is connected but no sound is coming through. On macOS open System Settings → Privacy & Security → Microphone and enable access for your browser, then reload this page."
+          );
+          return;
+        }
 
-    recognition.onerror = () => setListening(false);
-    recognition.onend = () => setListening(false);
-    recognition.start();
+        if (audioBlob.size < 8000) {
+          setSttError(
+            "Recording too short. Tap the mic, wait one full second, speak clearly, then tap again to stop."
+          );
+          return;
+        }
+
+        setTranscribing(true);
+        try {
+          const formData = new FormData();
+          formData.append("audio", audioBlob, `speech.${extension}`);
+          formData.append("language", langCode.split("-")[0]);
+
+          const res = await fetch("/api/stt", {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = (await res.json().catch(() => ({}))) as {
+            text?: string;
+            provider?: string;
+            error?: string;
+            detail?: string;
+            fallback?: boolean;
+            audioBytes?: number;
+          };
+          console.log("[stt] response", { status: res.status, ...data });
+
+          if (!res.ok || data.error) {
+            setSttError(
+              data.detail ||
+                data.error ||
+                "Speech recognition failed. Please try again."
+            );
+            return;
+          }
+
+          const text = (data.text ?? "").trim();
+          if (text) {
+            applyTranscript(text);
+          } else {
+            setSttError(
+              "No speech detected. Please speak a bit louder or closer to the mic."
+            );
+          }
+        } catch (err) {
+          console.log("[stt] fetch error", err);
+          setSttError(
+            "Could not reach the speech service. Please check your connection and try again."
+          );
+        } finally {
+          setTranscribing(false);
+        }
+      };
+
+      recorder.onerror = () => {
+        setListening(false);
+        stopMediaStream();
+      };
+
+      recorder.start();
+      setListening(true);
+
+      autoStopTimerRef.current = setTimeout(() => {
+        if (recorder.state !== "inactive") {
+          try {
+            recorder.stop();
+          } catch {}
+        }
+      }, MAX_RECORDING_MS);
+    } catch (err) {
+      console.log("[stt] getUserMedia error", err);
+      stopMediaStream();
+      setSttError(
+        "Microphone access was blocked. Please allow mic permission and try again."
+      );
+    }
   };
+
+  useEffect(() => {
+    return () => {
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        try {
+          recorder.stop();
+        } catch {}
+      }
+      stopMediaStream();
+    };
+  }, []);
 
   const allDone =
     promptIndex >= speakingPrompts.length - 1 &&
@@ -529,21 +532,47 @@ function SpeakingPracticeSection({
             {transcript && (
               <p className="text-xs text-muted-foreground mb-3">Heard: &ldquo;{transcript}&rdquo;</p>
             )}
+            {sttError && (
+              <p className="text-xs text-rose-500 mb-3">{sttError}</p>
+            )}
 
             <button
               onClick={startListening}
-              disabled={listening}
+              disabled={transcribing}
               className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full transition-all ${
                 listening
                   ? "bg-red-500 text-white animate-pulse scale-110"
-                  : "bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105"
+                  : transcribing
+                    ? "bg-amber-500 text-white animate-pulse"
+                    : "bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105"
               }`}
             >
               <Mic className="h-7 w-7" />
             </button>
             <p className="mt-3 text-sm text-muted-foreground">
-              {listening ? "Listening... speak now" : "Tap the microphone and speak"}
+              {listening
+                ? "Recording... tap again to stop"
+                : transcribing
+                  ? "Transcribing your speech..."
+                  : "Tap the microphone and speak"}
             </p>
+            {listening && (
+              <div className="mx-auto mt-3 w-48">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full bg-emerald-500 transition-[width] duration-75"
+                    style={{
+                      width: `${Math.min(100, Math.round(audioLevel * 500))}%`,
+                    }}
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {audioLevel > 0.02
+                    ? "Mic is picking up your voice"
+                    : "Speak now — if the bar stays flat, check your mic"}
+                </p>
+              </div>
+            )}
             <button onClick={() => setShowHint(true)} className="mt-3 text-xs text-primary hover:underline">
               Need a hint?
             </button>
@@ -583,11 +612,13 @@ export default function TopicLessonPage({
 }) {
   const lessonId = parseLessonSlug(lessonSlug);
   const safeLessonId = lessonId ?? 1;
-  const lesson = getGeneratedLesson(safeLessonId, language);
   const langCode: "tr-TR" | "fa-IR" = language === "tr" ? "tr-TR" : "fa-IR";
   const storageKey = `bllp-${language === "tr" ? "turkish" : "persian"}-lesson-${safeLessonId}`;
 
   const [mounted, setMounted] = useState(false);
+  const [lesson, setLesson] = useState<LessonContent | null>(null);
+  const [lessonLoading, setLessonLoading] = useState(true);
+  const [lessonError, setLessonError] = useState<string | null>(null);
   const [currentSection, setCurrentSection] = useState(0);
   const [highestReached, setHighestReached] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
@@ -596,9 +627,7 @@ export default function TopicLessonPage({
   const [listeningSelected, setListeningSelected] = useState<number | null>(null);
   const [listeningLocked, setListeningLocked] = useState(false);
   const [listeningDone, setListeningDone] = useState(false);
-  const [quizAnswers, setQuizAnswers] = useState<(number | null)[]>(
-    Array(4).fill(null)
-  );
+  const [quizAnswers, setQuizAnswers] = useState<(number | null)[]>([]);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
 
   useEffect(() => {
@@ -613,6 +642,42 @@ export default function TopicLessonPage({
   }, [storageKey]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadLesson() {
+      setLessonLoading(true);
+      setLessonError(null);
+      try {
+        const res = await fetch(
+          `/api/lesson-data?language=${language}&lesson=${safeLessonId}`
+        );
+        if (!res.ok) {
+          throw new Error(`Failed to load lesson data (${res.status})`);
+        }
+        const data = (await res.json()) as LessonContent;
+        if (!cancelled) {
+          setLesson(data);
+          setQuizAnswers(Array(data.quizQuestions.length).fill(null));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setLesson(null);
+          setLessonError(String(error));
+        }
+      } finally {
+        if (!cancelled) {
+          setLessonLoading(false);
+        }
+      }
+    }
+
+    loadLesson();
+    return () => {
+      cancelled = true;
+    };
+  }, [language, safeLessonId]);
+
+  useEffect(() => {
     if (!mounted) return;
     if (!reviewMode && currentSection > highestReached) {
       setHighestReached(currentSection);
@@ -620,52 +685,22 @@ export default function TopicLessonPage({
     }
   }, [currentSection, highestReached, reviewMode, mounted, storageKey]);
 
-  const quizQuestions = useMemo(
-    () => [
-      {
-        question: `What does "${lesson.vocabulary[0].local}" mean?`,
-        options: [
-          lesson.vocabulary[0].english,
-          lesson.vocabulary[1].english,
-          lesson.vocabulary[2].english,
-          lesson.vocabulary[3].english,
-        ],
-        correct: 0,
-      },
-      {
-        question: `Choose the best meaning for "${lesson.vocabulary[1].local}".`,
-        options: [
-          lesson.vocabulary[3].english,
-          lesson.vocabulary[1].english,
-          lesson.vocabulary[4].english,
-          lesson.vocabulary[2].english,
-        ],
-        correct: 1,
-      },
-      {
-        question: `A correct response to "${lesson.listening[0].promptEnglish}" is:`,
-        options: lesson.listening[0].options.map((o) => o.english),
-        correct: lesson.listening[0].correct,
-      },
-      {
-        question: `Which phrase asks for help politely?`,
-        options: [
-          lesson.keySentences[3].local,
-          lesson.keySentences[2].answerLocal,
-          lesson.keySentences[1].answerLocal,
-          lesson.keySentences[0].answerLocal,
-        ],
-        correct: 0,
-      },
-    ],
-    [lesson]
-  );
+  const quizQuestions = lesson?.quizQuestions ?? [];
 
   const score = quizAnswers.filter((a, i) => a === quizQuestions[i].correct).length;
   const progressStep = reviewMode || quizSubmitted ? sectionLabels.length : currentSection + 1;
   const progressPercent = Math.round((progressStep / sectionLabels.length) * 100);
 
-  if (!mounted) return null;
+  if (!mounted || lessonLoading) {
+    return <div className="text-sm text-muted-foreground">Loading lesson data...</div>;
+  }
+  if (!lesson) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        Could not load lesson data from CSV. {lessonError ?? ""}
+      </div>
+    );
+  }
 
   const jumpToSection = (index: number) => {
     setCurrentSection(index);
@@ -711,10 +746,10 @@ export default function TopicLessonPage({
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold tracking-tight">
-              Lesson {safeLessonId} - {lesson.title}
+              Lesson {safeLessonId} - {lesson.metadata.title}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {courseTitle} focus: {lesson.description}
+              {courseTitle} focus: {lesson.metadata.description}
             </p>
           </div>
         </div>

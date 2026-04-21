@@ -4,7 +4,7 @@ A modern web application that helps users learn new languages through structured
 
 ## Features
 
-- 12 language courses with 15 lessons each (Spanish, French, German, Japanese, Arabic, Turkish, Italian, Portuguese, Serbian, Mandarin, Hindi, Russian)
+- 12 language courses with 15 lessons each (Spanish, French, German, Japanese, Arabic, Turkish, Italian, Portuguese, Serbian, Persian, Hindi, Russian)
 - User authentication via email/password and Google sign-in
 - Course enrollment and progress tracking per user
 - Responsive dashboard with mobile-friendly sidebar
