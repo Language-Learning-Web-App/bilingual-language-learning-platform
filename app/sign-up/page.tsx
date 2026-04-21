@@ -73,7 +73,6 @@ export default function SignUpPage() {
         handleCodeInApp: false,
       });
       
-      alert("Verification email sent! Please check your inbox.");
       router.push("/verify-email");
     }catch (err: any) {
       setError(err?.message ?? "Sign up failed.");
