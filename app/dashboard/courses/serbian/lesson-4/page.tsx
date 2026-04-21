@@ -28,7 +28,6 @@ let currentAbort: AbortController | null = null;
 
 async function speak(
     text: string,
-    lang: "sr-RS" | "en-US" = "sr-RS",
     onEnd?: () => void
 ): Promise<void> {
     if (typeof window === "undefined") return;
@@ -57,7 +56,7 @@ async function speak(
         const res = await fetch("/api/tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text, lang }),
+            body: JSON.stringify({ text }),
             signal: abort.signal,
         });
 
@@ -85,7 +84,6 @@ async function speak(
         if (window.speechSynthesis) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = lang;
             utterance.rate = 0.9;
             utterance.onend = () => {
                 if (onSpeakEnd) {
@@ -376,8 +374,8 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
                         <div key={i}>
                             <p
                                 className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${msg.role === "you"
-                                        ? "text-right text-primary"
-                                        : "text-muted-foreground"
+                                    ? "text-right text-primary"
+                                    : "text-muted-foreground"
                                     }`}
                             >
                                 {msg.role === "ai" ? "AI Tutor" : "You"}
@@ -387,8 +385,8 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
                             >
                                 <div
                                     className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${msg.role === "ai"
-                                            ? "bg-muted text-foreground"
-                                            : "bg-primary text-primary-foreground"
+                                        ? "bg-muted text-foreground"
+                                        : "bg-primary text-primary-foreground"
                                         }`}
                                 >
                                     {msg.text}
@@ -430,8 +428,8 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
                             onClick={startListening}
                             disabled={listening}
                             className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full transition-all ${listening
-                                    ? "bg-red-500 text-white animate-pulse scale-110"
-                                    : "bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105"
+                                ? "bg-red-500 text-white animate-pulse scale-110"
+                                : "bg-primary/10 text-primary hover:bg-primary/20 hover:scale-105"
                                 }`}
                         >
                             <Mic className="h-7 w-7" />
@@ -531,15 +529,19 @@ export default function SerbianLesson4Page() {
         setListeningCompletedDate(loadListeningCompletedDate());
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
-
-    const handleSpeak = (id: string, text: string, lang: "sr-RS" | "en-US" = "sr-RS") => {
+    const handleSpeak = (id: string, text: string) => {
         if (playingId === id) {
-            if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
             setPlayingId(null);
             return;
         }
+
         setPlayingId(id);
-        speak(text, lang, () => setPlayingId(null));
+
+        speak(text, () => setPlayingId(null));
     };
 
     const handleNext = () => {
@@ -665,10 +667,10 @@ export default function SerbianLesson4Page() {
                                             </div>
                                             <button
                                                 type="button"
-                                                onClick={() => handleSpeak(id, `${word.serbian}. ${word.english}`, "sr-RS")}
+                                                onClick={() => handleSpeak(id, `${word.serbian}. ${word.english}`)}
                                                 className={`shrink-0 rounded-full p-1.5 transition-colors ${isPlaying
-                                                        ? "text-primary bg-primary/10"
-                                                        : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                                    ? "text-primary bg-primary/10"
+                                                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                                                     }`}
                                                 title={`Listen: ${word.serbian}`}
                                             >
@@ -724,10 +726,10 @@ export default function SerbianLesson4Page() {
                                             </div>
                                             <button
                                                 type="button"
-                                                onClick={() => handleSpeak(id, `${s.serbian}. ${s.english}`, "sr-RS")}
+                                                onClick={() => handleSpeak(id, `${s.serbian}. ${s.english}`)}
                                                 className={`shrink-0 mt-0.5 rounded-full p-1.5 transition-colors ${isPlaying
-                                                        ? "text-primary bg-primary/10"
-                                                        : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                                    ? "text-primary bg-primary/10"
+                                                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                                                     }`}
                                                 title={`Listen: ${s.serbian}`}
                                             >
@@ -778,19 +780,19 @@ export default function SerbianLesson4Page() {
                                         <div className={`flex ${isYou ? "justify-end" : ""}`}>
                                             <div
                                                 className={`relative overflow-hidden max-w-[80%] rounded-xl px-4 py-2.5 text-sm cursor-pointer ${line.speaker === "Staff"
-                                                        ? "bg-muted text-foreground"
-                                                        : "bg-primary text-primary-foreground"
+                                                    ? "bg-muted text-foreground"
+                                                    : "bg-primary text-primary-foreground"
                                                     }`}
-                                                onClick={() => handleSpeak(dlgId, line.text, "sr-RS")}
+                                                onClick={() => handleSpeak(dlgId, line.text)}
                                             >
                                                 <div className="flex items-center gap-2 relative z-10">
                                                     <span>{line.text}</span>
                                                     <button
                                                         type="button"
-                                                        onClick={(e) => { e.stopPropagation(); handleSpeak(dlgId, line.text, "sr-RS"); }}
+                                                        onClick={(e) => { e.stopPropagation(); handleSpeak(dlgId, line.text); }}
                                                         className={`shrink-0 rounded-full p-1 transition-colors ${isPlaying
-                                                                ? isYou ? "text-primary-foreground/90 bg-white/20" : "text-primary bg-primary/10"
-                                                                : isYou ? "text-primary-foreground/60 hover:text-primary-foreground/90" : "text-muted-foreground hover:text-primary"
+                                                            ? isYou ? "text-primary-foreground/90 bg-white/20" : "text-primary bg-primary/10"
+                                                            : isYou ? "text-primary-foreground/60 hover:text-primary-foreground/90" : "text-muted-foreground hover:text-primary"
                                                             }`}
                                                     >
                                                         <Volume2 className="h-3.5 w-3.5" />
@@ -899,14 +901,14 @@ export default function SerbianLesson4Page() {
 
                                     <div
                                         className="relative overflow-hidden rounded-lg bg-muted px-4 py-3 cursor-pointer hover:bg-muted/80 transition-colors"
-                                        onClick={() => handleSpeak(promptId, q.prompt, "sr-RS")}
+                                        onClick={() => handleSpeak(promptId, q.prompt)}
                                     >
                                         <div className="flex items-center gap-3 relative z-10">
                                             <button
                                                 type="button"
                                                 className={`shrink-0 rounded-full p-2 transition-colors ${isPromptPlaying
-                                                        ? "text-primary bg-primary/10"
-                                                        : "text-primary hover:bg-primary/10"
+                                                    ? "text-primary bg-primary/10"
+                                                    : "text-primary hover:bg-primary/10"
                                                     }`}
                                             >
                                                 <Volume2 className="h-5 w-5" />
@@ -965,7 +967,7 @@ export default function SerbianLesson4Page() {
                                                             if (listeningLocked) return;
                                                             setListeningSelected(oi);
                                                             setListeningRevealed((prev) => new Set(prev).add(oi));
-                                                            handleSpeak(optId, opt.text, "sr-RS");
+                                                            handleSpeak(optId, opt.text);
                                                             if (isCorrect) {
                                                                 setListeningLocked(true);
                                                                 setListeningScore((s) => s + 1);
@@ -1005,11 +1007,11 @@ export default function SerbianLesson4Page() {
                                                         type="button"
                                                         onClick={() => {
                                                             setListeningRevealed((prev) => new Set(prev).add(oi));
-                                                            handleSpeak(optId, opt.text, "sr-RS");
+                                                            handleSpeak(optId, opt.text);
                                                         }}
                                                         className={`absolute right-2 top-1/2 -translate-y-1/2 z-20 shrink-0 rounded-full p-1.5 transition-colors ${isOptPlaying
-                                                                ? "text-primary bg-primary/10"
-                                                                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                                            ? "text-primary bg-primary/10"
+                                                            : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                                                             }`}
                                                     >
                                                         <Volume2 className="h-3.5 w-3.5" />
@@ -1191,8 +1193,8 @@ export default function SerbianLesson4Page() {
                                                 const pct = Math.round((last.score / last.total) * 100);
                                                 return (
                                                     <div className={`mt-3 rounded-lg px-4 py-3 text-sm ${last.passed
-                                                            ? "bg-emerald-50 border border-emerald-200"
-                                                            : "bg-red-50 border border-red-200"
+                                                        ? "bg-emerald-50 border border-emerald-200"
+                                                        : "bg-red-50 border border-red-200"
                                                         }`}>
                                                         <p className="font-medium">
                                                             Last attempt: {last.score}/{last.total} ({pct}%){" "}
@@ -1258,11 +1260,11 @@ export default function SerbianLesson4Page() {
                                                         type="button"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleSpeak(qId, q.question, "en-US");
+                                                            handleSpeak(qId, q.question);
                                                         }}
                                                         className={`shrink-0 mt-0.5 rounded-full p-1.5 transition-colors ${isQPlaying
-                                                                ? "text-primary bg-primary/10"
-                                                                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                                            ? "text-primary bg-primary/10"
+                                                            : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                                                             }`}
                                                         title="Listen to question"
                                                     >
@@ -1282,8 +1284,8 @@ export default function SerbianLesson4Page() {
                                                                     setQuizAnswers(next);
                                                                 }}
                                                                 className={`group relative overflow-hidden flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm text-left transition-all ${quizAnswers[qi] === oi
-                                                                        ? "border-primary bg-primary/10 text-primary font-medium"
-                                                                        : "bg-card text-foreground hover:border-primary/30 hover:bg-muted"
+                                                                    ? "border-primary bg-primary/10 text-primary font-medium"
+                                                                    : "bg-card text-foreground hover:border-primary/30 hover:bg-muted"
                                                                     }`}
                                                             >
                                                                 <span>{opt}</span>
@@ -1291,11 +1293,11 @@ export default function SerbianLesson4Page() {
                                                                     role="button"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        handleSpeak(oId, opt, isEnglishOptions ? "en-US" : "sr-RS");
+                                                                        handleSpeak(oId, opt);
                                                                     }}
                                                                     className={`shrink-0 ml-2 rounded-full p-1 transition-colors ${isOPlaying
-                                                                            ? "text-primary bg-primary/10 opacity-100"
-                                                                            : "text-muted-foreground/50 hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100"
+                                                                        ? "text-primary bg-primary/10 opacity-100"
+                                                                        : "text-muted-foreground/50 hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100"
                                                                         }`}
                                                                     title={`Listen: ${opt}`}
                                                                 >
@@ -1454,8 +1456,8 @@ export default function SerbianLesson4Page() {
                                             <div
                                                 key={qi}
                                                 className={`rounded-lg px-4 py-2.5 text-sm ${quizAnswers[qi] === q.correct
-                                                        ? "bg-emerald-50 border border-emerald-200"
-                                                        : "bg-red-50 border border-red-200"
+                                                    ? "bg-emerald-50 border border-emerald-200"
+                                                    : "bg-red-50 border border-red-200"
                                                     }`}
                                             >
                                                 <p className="font-medium">
