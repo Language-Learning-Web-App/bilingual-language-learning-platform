@@ -45,7 +45,7 @@ const courseRoutes: Record<string, string> = {
   Italian: "/dashboard/courses/italian",
   Portuguese: "/dashboard/courses/portuguese",
   Serbian: "/dashboard/courses/serbian",
-  Persian: "/dashboard/courses/mandarin",
+  Persian: "/dashboard/courses/persian",
   Hindi: "/dashboard/courses/hindi",
   Russian: "/dashboard/courses/russian",
 };
