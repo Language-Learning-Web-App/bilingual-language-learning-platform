@@ -97,10 +97,10 @@ async function speak(
 }
 
 const vocabulary = [
-    { serbian: "Restoran", english: "Restaurant" },
-    { serbian: "Jelovnik", english: "Menu" },
+    { serbian: "Prodavnica", english: "Store" },
+    { serbian: "Parking", english: "Parking lot" },
     { serbian: "Hrana", english: "Food" },
-    { serbian: "Piće", english: "Drink" },
+    { serbian: "Kolica", english: "Shopping cart" },
     { serbian: "Voda", english: "Water" },
     { serbian: "Račun", english: "Receipt" },
     { serbian: "Konobar", english: "Waiter" },
