@@ -4,13 +4,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { signOut, updateProfile, deleteUser } from "firebase/auth";
-import { auth } from "@/app/lib/firebase-config";
+import { doc, deleteDoc, collection, getDocs, writeBatch } from "firebase/firestore";
+import { auth, db } from "@/app/lib/firebase-config";
 
 import { updateUserProfile } from "@/app/lib/userProfileService";
 import { useUserProfile } from "@/app/context/UserProfileContext";
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Languages, ArrowLeft, LogOut, User } from "lucide-react";
 
 export default function SettingsPage() {
@@ -21,6 +30,7 @@ export default function SettingsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [loading, setLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false); // ✅ modal state
 
   useEffect(() => {
     if (user?.displayName) setDisplayName(user.displayName);
@@ -41,19 +51,11 @@ export default function SettingsPage() {
       alert("Display name cannot be empty");
       return;
     }
-
     try {
       setLoading(true);
-
-      // 1. Update Firebase Auth
       await updateProfile(user, { displayName });
-
-      // 2. Update Firestore
       await updateUserProfile(user.uid, { name: displayName });
-
-      // 3. Refresh context
       await refreshProfile();
-
       setIsEditing(false);
     } catch (err) {
       console.error("Error updating display name:", err);
@@ -66,31 +68,72 @@ export default function SettingsPage() {
   const handleDeleteAccount = async () => {
     if (!user) return;
 
-    const confirmDelete = confirm(
-      "Are you sure you want to delete your account? This cannot be undone."
-    );
-    if (!confirmDelete) return;
-
     try {
       setLoading(true);
+      const uid = user.uid;
+      const batch = writeBatch(db);
+
+      
+      batch.delete(doc(db, "users", uid));
+      await batch.commit();
+
+      
+      const activitySnap = await getDocs(collection(db, "users", uid, "activity"));
+      const subBatch = writeBatch(db);
+      activitySnap.forEach((d) => subBatch.delete(d.ref));
+      await subBatch.commit();
+
+      
       await deleteUser(user);
-      alert("Account deleted successfully");
-      router.replace("/sign-up");
+      
+      localStorage.clear();
+
+      router.replace("/#");
     } catch (err: any) {
       console.error("Error deleting account:", err);
       if (err.code === "auth/requires-recent-login") {
         alert("Please log in again before deleting your account.");
         router.replace("/sign-in");
       } else {
-        alert("Failed to delete account");
+        alert("Failed to delete account. Please try again.");
       }
     } finally {
       setLoading(false);
+      setShowDeleteModal(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Account</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete your account? This will permanently
+              remove all your data and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={loading}
+            >
+              {loading ? "Deleting..." : "Yes, delete my account"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <header className="border-b">
         <div className="mx-auto flex max-w-5xl items-center justify-between p-6">
@@ -159,11 +202,7 @@ export default function SettingsPage() {
 
               {isEditing ? (
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={handleChangeDisplayName}
-                    disabled={loading}
-                  >
+                  <Button variant="outline" onClick={handleChangeDisplayName} disabled={loading}>
                     Save
                   </Button>
                   <Button
@@ -178,11 +217,7 @@ export default function SettingsPage() {
                   </Button>
                 </div>
               ) : (
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditing(true)}
-                  disabled={loading}
-                >
+                <Button variant="outline" onClick={() => setIsEditing(true)} disabled={loading}>
                   Edit Display Name
                 </Button>
               )}
@@ -222,13 +257,14 @@ export default function SettingsPage() {
               Danger Zone
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Sensitive actions.
+              Sensitive actions that cannot be reversed.
             </p>
 
             <div className="mt-4">
+              {/* ✅ Opens modal instead of confirm() */}
               <Button
                 variant="destructive"
-                onClick={handleDeleteAccount}
+                onClick={() => setShowDeleteModal(true)}
                 disabled={loading}
               >
                 Delete Account

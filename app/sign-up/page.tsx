@@ -68,7 +68,10 @@ export default function SignUpPage() {
         displayName: `${firstName} ${lastName}`.trim(),
       });
 
-      await sendEmailVerification(cred.user);
+      await sendEmailVerification(cred.user, {
+        url: `${window.location.origin}/dashboard`,
+        handleCodeInApp: false,
+      });
       
       alert("Verification email sent! Please check your inbox.");
       router.push("/verify-email");
