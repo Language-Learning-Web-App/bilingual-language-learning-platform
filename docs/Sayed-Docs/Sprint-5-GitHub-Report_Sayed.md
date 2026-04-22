@@ -28,7 +28,7 @@ https://github.com/Language-Learning-Web-App/bilingual-language-learning-platfor
 | Metric | Value |
 |--------|-------|
 | **Total number of commits** | 6 |
-| **Date range** | 2026-04-21 - 2026-04-21 |
+| **Date range** | 2026-04-7 - 2026-04-21 |
 | **First commit** | 2026-04-21 |
 | **Last commit** | 2026-04-21 |
 
