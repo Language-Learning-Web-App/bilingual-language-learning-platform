@@ -37,7 +37,7 @@ This sprint contains a mix of Stories (bookmark icon) and Bugs (bug icon).
 |---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------|
 | SH (Samuel)   | BLLPPBAI-75 (Unable to access Settings page), BLLPPBAI-76 (Verify without clicking a confirmation button), BLLPPBAI-77 (Delete Firebase data after account deletion) | 3                |
 | IM (Teammate) | BLLPPBAI-69 (Removed Azure fully), BLLPPBAI-70 (Added Cyrillic lesson to Serbian), BLLPPBAI-71 (Finished all Serbian Lessons), BLLPPBAI-72 (Implementing Eleven Labs API) | 4           |
-| [Teammate 3]  | BLLPPBAI-68 (AI Speech to Text Models Summary), BLLPPBAI-67 (AI Text to Speech Models summary), BLLPPBAI-73 (Externalize Lesson Content into CSV Files), BLLPPBAI-74 (Speaking Practice with Real Speech-to-Text) | 4 |
+| Sayed Tamim Hshemi  | BLLPPBAI-68 (AI Speech to Text Models Summary), BLLPPBAI-67 (AI Text to Speech Models summary), BLLPPBAI-73 (Externalize Lesson Content into CSV Files), BLLPPBAI-74 (Speaking Practice with Real Speech-to-Text) | 4 |
 
 ---
 
