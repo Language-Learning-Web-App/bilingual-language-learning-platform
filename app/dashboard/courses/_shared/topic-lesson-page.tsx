@@ -39,7 +39,7 @@ let currentAbort: AbortController | null = null;
 
 async function speak(
   text: string,
-  lang: "tr-TR" | "fa-IR" | "en-US",
+  lang: "tr-TR" | "fa-IR" | "en-US" | "sr-Latn-RS",
   onEnd?: () => void
 ): Promise<void> {
   if (typeof window === "undefined") return;
@@ -131,7 +131,7 @@ function SpeakingPracticeSection({
     expectedEnglish: string;
   }>;
   onNext: () => void;
-  langCode: "tr-TR" | "fa-IR";
+  langCode: "tr-TR" | "fa-IR" | "sr-Latn-RS";
 }) {
   const [messages, setMessages] = useState<
     { role: "ai" | "you"; text: string; english?: string }[]
@@ -612,8 +612,8 @@ export default function TopicLessonPage({
 }) {
   const lessonId = parseLessonSlug(lessonSlug);
   const safeLessonId = lessonId ?? 1;
-  const langCode: "tr-TR" | "fa-IR" = language === "tr" ? "tr-TR" : "fa-IR";
-  const storageKey = `bllp-${language === "tr" ? "turkish" : "persian"}-lesson-${safeLessonId}`;
+  const langCode: "tr-TR" | "fa-IR" | "sr-Latn-RS" = language === "tr" ? "tr-TR" : language === "fa" ? "fa-IR" : "sr-Latn-RS";
+  const storageKey = `bllp-${language === "tr" ? "turkish" : language === "fa" ? "persian" : "serbian"}-lesson-${safeLessonId}`;
 
   const [mounted, setMounted] = useState(false);
   const [lesson, setLesson] = useState<LessonContent | null>(null);
@@ -715,7 +715,7 @@ export default function TopicLessonPage({
   const handleSpeak = (
     id: string,
     text: string,
-    lang: "tr-TR" | "fa-IR" | "en-US" = langCode
+    lang: "tr-TR" | "fa-IR" | "en-US" | "sr-Latn-RS" = langCode
   ) => {
     if (playingId === id) {
       if (currentAudio) {
