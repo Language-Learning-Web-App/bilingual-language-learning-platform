@@ -67,9 +67,10 @@ function parseCsv(text: string): CsvRow[] {
   return rows;
 }
 
-function languageKey(code: string): "turkish" | "persian" | null {
+function languageKey(code: string): "turkish" | "persian" | "serbian" | null {
   if (code === "tr") return "turkish";
   if (code === "fa") return "persian";
+  if (code === "sr") return "serbian";
   return null;
 }
 

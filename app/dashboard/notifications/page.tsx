@@ -12,7 +12,7 @@ const fadeUp = {
 };
 
 export interface Notification {
-  id: number;
+  id: string;
   message: string;
   time: string;
   read: boolean;
@@ -20,11 +20,15 @@ export interface Notification {
 
 export default function NotificationsPage() {
   const { activity } = useCourses();
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
   const [uid, setUid] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
 
-  // Track Firebase user
+  const STORAGE_KEY = "hiddenNotifications";
+
+  // auth
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) setUid(user.uid);
@@ -33,39 +37,63 @@ export default function NotificationsPage() {
         setNotifications([]);
       }
     });
+
     return unsub;
   }, []);
 
-  // Build notifications from activity
+  // load hidden ids
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) setHiddenIds(JSON.parse(saved));
+  }, []);
+
+  // build notifications (STABLE IDS NOW)
   useEffect(() => {
     if (!uid) return;
 
-    const activityNotifications: Notification[] = activity.map((entry, idx) => {
-      const date = new Date(entry.timestamp);
-      return {
-        id: date.getTime() + idx,
-        message:
-          entry.action === "enrolled"
-            ? `Enrolled in ${entry.course}`
-            : `Dropped ${entry.course}`,
-        time: date.toLocaleDateString(),
-        read: false,
-      };
-    });
+    const built: Notification[] = activity
+      .map((entry) => {
+        const id = `${entry.course}-${entry.action}-${entry.timestamp}`;
 
-    const sorted = [...activityNotifications].sort((a, b) => b.id - a.id);
-    setNotifications(sorted);
-  }, [uid, activity]);
+        return {
+          id,
+          message:
+            entry.action === "enrolled"
+              ? `Enrolled in ${entry.course}`
+              : `Dropped ${entry.course}`,
+          time: new Date(entry.timestamp).toLocaleDateString(),
+          read: false,
+        };
+      })
+      .filter((n) => !hiddenIds.includes(n.id))
+      .sort((a, b) => (a.id < b.id ? 1 : -1));
 
-  const markAsRead = (id: number) =>
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    setNotifications(built);
+  }, [uid, activity, hiddenIds]);
 
+  // mark single
+  const markAsRead = (id: string) => {
+    const updated = [...hiddenIds, id];
+
+    setHiddenIds(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  // mark all
   const markAllAsRead = () => {
     setMarkingAll(true);
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    setMarkingAll(false);
+
+    const allIds = notifications.map((n) => n.id);
+    const updated = [...hiddenIds, ...allIds];
+
+    setTimeout(() => {
+      setHiddenIds(updated);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      setNotifications([]);
+      setMarkingAll(false);
+    }, 250);
   };
 
   return (
@@ -75,28 +103,31 @@ export default function NotificationsPage() {
       animate="show"
       className="max-w-4xl mx-auto space-y-8"
     >
-      {/* Header */}
+      {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Notifications
+          </h1>
           <p className="text-muted-foreground mt-2">
             Stay updated with your recent activities.
           </p>
         </div>
+
         <button
           onClick={markAllAsRead}
-          disabled={markingAll}
+          disabled={markingAll || notifications.length === 0}
           className={`px-4 py-2 rounded-md transition ${
-            markingAll
+            markingAll || notifications.length === 0
               ? "bg-gray-400 text-white cursor-not-allowed"
               : "bg-primary text-white hover:bg-primary/80"
           }`}
         >
-          {markingAll ? "Marking..." : "Mark all as read"}
+          {markingAll ? "Clearing..." : "Mark all as read"}
         </button>
       </div>
 
-      {/* Notifications List */}
+      {/* LIST */}
       <div className="space-y-4">
         <AnimatePresence>
           {notifications.length === 0 ? (
@@ -117,13 +148,13 @@ export default function NotificationsPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className={`rounded-lg border bg-card p-4 shadow-sm flex justify-between items-center cursor-pointer transition ${
-                  note.read ? "opacity-60" : "opacity-100 hover:shadow-md"
-                }`}
+                className="rounded-lg border bg-card p-4 shadow-sm flex justify-between items-center cursor-pointer hover:shadow-md transition"
                 onClick={() => markAsRead(note.id)}
               >
                 <p className="text-sm">{note.message}</p>
-                <span className="text-xs text-muted-foreground">{note.time}</span>
+                <span className="text-xs text-muted-foreground">
+                  {note.time}
+                </span>
               </motion.div>
             ))
           )}
