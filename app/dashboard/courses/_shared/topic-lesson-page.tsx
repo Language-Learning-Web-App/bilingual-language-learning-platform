@@ -37,9 +37,20 @@ let currentAudio: HTMLAudioElement | null = null;
 let onSpeakEnd: (() => void) | null = null;
 let currentAbort: AbortController | null = null;
 
+type SpeakLang =
+  | "tr-TR"
+  | "fa-IR"
+  | "en-US"
+  | "sr-Latn-RS"
+  | "ru-RU"
+  | "es-ES"
+  | "fr-FR"
+  | "de-DE"
+  | "ja-JP";
+
 async function speak(
   text: string,
-  lang: "tr-TR" | "fa-IR" | "en-US" | "sr-Latn-RS",
+  lang: SpeakLang,
   onEnd?: () => void
 ): Promise<void> {
   if (typeof window === "undefined") return;
@@ -103,11 +114,51 @@ async function speak(
   }
 }
 
-function parseLessonSlug(slug: string): number | null {
+const MAX_LESSON_BY_LANGUAGE: Record<SupportedLanguage, number> = {
+  tr: 15,
+  fa: 15,
+  sr: 16,
+  ru: 16,
+  es: 15,
+  fr: 15,
+  de: 15,
+  ja: 15,
+};
+
+const LANGUAGE_FOLDER: Record<SupportedLanguage, string> = {
+  tr: "turkish",
+  fa: "persian",
+  sr: "serbian",
+  ru: "russian",
+  es: "spanish",
+  fr: "french",
+  de: "german",
+  ja: "japanese",
+};
+
+const LANGUAGE_LOCALE: Record<
+  SupportedLanguage,
+  Exclude<SpeakLang, "en-US">
+> = {
+  tr: "tr-TR",
+  fa: "fa-IR",
+  sr: "sr-Latn-RS",
+  ru: "ru-RU",
+  es: "es-ES",
+  fr: "fr-FR",
+  de: "de-DE",
+  ja: "ja-JP",
+};
+
+function parseLessonSlug(
+  slug: string,
+  language: SupportedLanguage
+): number | null {
   const match = /^lesson-(\d+)$/.exec(slug);
   if (!match) return null;
   const id = Number.parseInt(match[1], 10);
-  if (Number.isNaN(id) || id < 1 || id > 15) return null;
+  const max = MAX_LESSON_BY_LANGUAGE[language];
+  if (Number.isNaN(id) || id < 1 || id > max) return null;
   return id;
 }
 
@@ -131,7 +182,7 @@ function SpeakingPracticeSection({
     expectedEnglish: string;
   }>;
   onNext: () => void;
-  langCode: "tr-TR" | "fa-IR" | "sr-Latn-RS";
+  langCode: Exclude<SpeakLang, "en-US">;
 }) {
   const [messages, setMessages] = useState<
     { role: "ai" | "you"; text: string; english?: string }[]
@@ -610,10 +661,10 @@ export default function TopicLessonPage({
   backLabel: string;
   courseTitle: string;
 }) {
-  const lessonId = parseLessonSlug(lessonSlug);
+  const lessonId = parseLessonSlug(lessonSlug, language);
   const safeLessonId = lessonId ?? 1;
-  const langCode: "tr-TR" | "fa-IR" | "sr-Latn-RS" = language === "tr" ? "tr-TR" : language === "fa" ? "fa-IR" : "sr-Latn-RS";
-  const storageKey = `bllp-${language === "tr" ? "turkish" : language === "fa" ? "persian" : "serbian"}-lesson-${safeLessonId}`;
+  const langCode = LANGUAGE_LOCALE[language];
+  const storageKey = `bllp-${LANGUAGE_FOLDER[language]}-lesson-${safeLessonId}`;
 
   const [mounted, setMounted] = useState(false);
   const [lesson, setLesson] = useState<LessonContent | null>(null);
@@ -715,7 +766,7 @@ export default function TopicLessonPage({
   const handleSpeak = (
     id: string,
     text: string,
-    lang: "tr-TR" | "fa-IR" | "en-US" | "sr-Latn-RS" = langCode
+    lang: SpeakLang = langCode
   ) => {
     if (playingId === id) {
       if (currentAudio) {
