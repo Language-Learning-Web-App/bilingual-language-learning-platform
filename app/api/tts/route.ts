@@ -64,6 +64,7 @@ async function speakWithElevenLabs(text: string, voiceId: string) {
         voice_settings: {
           stability: 0.6,
           similarity_boost: 0.8,
+          speed: 0.75,
         },
       }),
     }
