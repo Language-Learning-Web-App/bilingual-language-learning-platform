@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel
+
+const VOICE_BY_LANG: Record<string, string> = {
+  "tr-TR": "ErXwobaYiN019PkySvjV", // Antoni
+  "fa-IR": "pNInz6obpgDQGcFmaJgB", // Adam
+  "sr-Latn-RS": "AZnzlk1XvdvUeBnXmlld", // Domi
+  "ru-RU": "onwK4e9ZLuTAKqWW03F9", // Daniel
+  "es-ES": "EXAVITQu4vr4xnSDxMaL", // Bella
+  "fr-FR": "IKne3meq5aSn9XLyUdCD", // Charlie
+  "de-DE": "ErXwobaYiN019PkySvjV", // Antoni
+  "ja-JP": "AZnzlk1XvdvUeBnXmlld", // Domi
+  "en-US": DEFAULT_VOICE_ID,
+};
+
 export async function POST(req: NextRequest) {
   try {
-    const { text } = await req.json();
+    const { text, lang } = await req.json();
 
-    console.log("ELEVENLABS KEY:", process.env.ELEVENLABS_API_KEY);
-    
     if (!text || typeof text !== "string") {
       return NextResponse.json(
         { error: "text is required" },
@@ -13,8 +25,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Default ElevenLabs voice (Rachel)
-    const voiceId = "21m00Tcm4TlvDq8ikWAM";
+    const voiceId =
+      (typeof lang === "string" && VOICE_BY_LANG[lang]) || DEFAULT_VOICE_ID;
 
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -48,12 +60,9 @@ export async function POST(req: NextRequest) {
         "Content-Type": "audio/mpeg",
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("ElevenLabs TTS error:", error);
-
-    return NextResponse.json(
-      { error: error.message || "TTS failed" },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "TTS failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
