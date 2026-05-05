@@ -5,12 +5,15 @@ const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel
 const VOICE_BY_LANG: Record<string, string> = {
   "tr-TR": "ErXwobaYiN019PkySvjV", // Antoni
   "fa-IR": "pNInz6obpgDQGcFmaJgB", // Adam
-  "sr-Latn-RS": "AZnzlk1XvdvUeBnXmlld", // Domi
-  "ru-RU": "onwK4e9ZLuTAKqWW03F9", // Daniel
-  "es-ES": "EXAVITQu4vr4xnSDxMaL", // Bella
-  "fr-FR": "IKne3meq5aSn9XLyUdCD", // Charlie
-  "de-DE": "ErXwobaYiN019PkySvjV", // Antoni
-  "ja-JP": "AZnzlk1XvdvUeBnXmlld", // Domi
+  "sr-Latn-RS": "w1Yv5j7mDBdGWLt63UIH", // Iva
+  "ru-RU": "JKtNvDNrWu33P1xzttP2", // Ivan
+  "es-ES": "6Gr4AVmTax1pMJO0lHRK", // Catalina
+  "fr-FR": "odOFTFZU3DvAZ3EV3KHi", // Lucas
+  "de-DE": "wcqN36SUOZ0EhToc2OIu", // Daniel
+  "ja-JP": "17ljzcHzSunXNkdixIEa", // Hirokoji
+  "it-IT": "zFA34HbdHBvF8WhlSusK", // Nora
+  "zn-CN": "bhJUNIXWQQ94l8eI2VUf", // Amy
+  "pt-BR": "ejarTsrf33xoVlH9hMuy", // Luis
   "en-US": DEFAULT_VOICE_ID,
 };
 
