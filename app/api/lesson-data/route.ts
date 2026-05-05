@@ -67,12 +67,38 @@ function parseCsv(text: string): CsvRow[] {
   return rows;
 }
 
-function languageKey(code: string): "turkish" | "persian" | "serbian" | null {
+type LanguageFolder =
+  | "turkish"
+  | "persian"
+  | "serbian"
+  | "russian"
+  | "spanish"
+  | "french"
+  | "german"
+  | "japanese";
+
+function languageKey(code: string): LanguageFolder | null {
   if (code === "tr") return "turkish";
   if (code === "fa") return "persian";
   if (code === "sr") return "serbian";
+  if (code === "ru") return "russian";
+  if (code === "es") return "spanish";
+  if (code === "fr") return "french";
+  if (code === "de") return "german";
+  if (code === "ja") return "japanese";
   return null;
 }
+
+const MAX_LESSON_BY_LANGUAGE: Record<LanguageFolder, number> = {
+  turkish: 15,
+  persian: 15,
+  serbian: 16,
+  russian: 16,
+  spanish: 15,
+  french: 15,
+  german: 15,
+  japanese: 15,
+};
 
 function toLessonContent(rows: CsvRow[]): LessonContent {
   const metadataRow = rows.find((r) => r.section === "metadata");
@@ -122,7 +148,12 @@ export async function GET(req: NextRequest) {
   const lessonNumber = Number.parseInt(lessonParam ?? "", 10);
   const language = languageKey(languageParam ?? "");
 
-  if (!language || Number.isNaN(lessonNumber) || lessonNumber < 1 || lessonNumber > 15) {
+  if (
+    !language ||
+    Number.isNaN(lessonNumber) ||
+    lessonNumber < 1 ||
+    lessonNumber > MAX_LESSON_BY_LANGUAGE[language]
+  ) {
     return NextResponse.json(
       { error: "Invalid language or lesson" },
       { status: 400 }

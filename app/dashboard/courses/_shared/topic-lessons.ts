@@ -1,4 +1,12 @@
-export type SupportedLanguage = "tr" | "fa" | "sr";
+export type SupportedLanguage =
+  | "tr"
+  | "fa"
+  | "sr"
+  | "ru"
+  | "es"
+  | "fr"
+  | "de"
+  | "ja";
 
 export interface TopicMeta {
   id: number;
