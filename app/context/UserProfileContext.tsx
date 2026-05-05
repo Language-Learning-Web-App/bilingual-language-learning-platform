@@ -6,6 +6,7 @@ import { auth } from "../lib/firebase-config";
 import {
   createUserProfile,
   getUserProfile,
+  updateLoginStreak,
   UserProfile,
 } from "../lib/userProfileService";
 
@@ -36,6 +37,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         await createUserProfile(user.uid, user.email ?? "");
+        await updateLoginStreak(user.uid);
         const data = await getUserProfile(user.uid);
         setProfile(data);
       } else {

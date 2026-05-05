@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { BookOpen, MoreVertical } from "lucide-react";
@@ -11,7 +10,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 import { useCourses } from "../courses-context";
+import { useUserProfile } from "@/app/context/UserProfileContext";
+
+// ─── Types & Constants ────────────────────────────────────────────────────────
 
 interface Course {
   name: string;
@@ -20,34 +23,36 @@ interface Course {
   level: string;
 }
 
+const TOTAL_SECTIONS = 6;
+
 const allCourses: Course[] = [
-  { name: "Spanish", flag: "🇪🇸", lessons: 15, level: "Beginner" },
-  { name: "French", flag: "🇫🇷", lessons: 15, level: "Beginner" },
-  { name: "German", flag: "🇩🇪", lessons: 15, level: "Beginner" },
-  { name: "Japanese", flag: "🇯🇵", lessons: 15, level: "Beginner" },
-  { name: "Arabic", flag: "🇸🇦", lessons: 15, level: "Beginner" },
-  { name: "Turkish", flag: "🇹🇷", lessons: 15, level: "Beginner" },
-  { name: "Italian", flag: "🇮🇹", lessons: 15, level: "Beginner" },
+  { name: "Spanish",    flag: "🇪🇸", lessons: 15, level: "Beginner" },
+  { name: "French",     flag: "🇫🇷", lessons: 15, level: "Beginner" },
+  { name: "German",     flag: "🇩🇪", lessons: 15, level: "Beginner" },
+  { name: "Japanese",   flag: "🇯🇵", lessons: 15, level: "Beginner" },
+  { name: "Arabic",     flag: "🇸🇦", lessons: 15, level: "Beginner" },
+  { name: "Turkish",    flag: "🇹🇷", lessons: 15, level: "Beginner" },
+  { name: "Italian",    flag: "🇮🇹", lessons: 15, level: "Beginner" },
   { name: "Portuguese", flag: "🇵🇹", lessons: 15, level: "Beginner" },
-  { name: "Serbian", flag: "🇷🇸", lessons: 15, level: "Beginner" },
-  { name: "Persian", flag: "🇮🇷", lessons: 15, level: "Beginner" },
-  { name: "Hindi", flag: "🇮🇳", lessons: 15, level: "Beginner" },
-  { name: "Russian", flag: "🇷🇺", lessons: 15, level: "Beginner" },
+  { name: "Serbian",    flag: "🇷🇸", lessons: 15, level: "Beginner" },
+  { name: "Persian",    flag: "🇮🇷", lessons: 15, level: "Beginner" },
+  { name: "Hindi",      flag: "🇮🇳", lessons: 15, level: "Beginner" },
+  { name: "Russian",    flag: "🇷🇺", lessons: 15, level: "Beginner" },
 ];
 
 const courseRoutes: Record<string, string> = {
-  Spanish: "/dashboard/courses/spanish",
-  French: "/dashboard/courses/french",
-  German: "/dashboard/courses/german",
-  Japanese: "/dashboard/courses/japanese",
-  Arabic: "/dashboard/courses/arabic",
-  Turkish: "/dashboard/courses/turkish",
-  Italian: "/dashboard/courses/italian",
+  Spanish:    "/dashboard/courses/spanish",
+  French:     "/dashboard/courses/french",
+  German:     "/dashboard/courses/german",
+  Japanese:   "/dashboard/courses/japanese",
+  Arabic:     "/dashboard/courses/arabic",
+  Turkish:    "/dashboard/courses/turkish",
+  Italian:    "/dashboard/courses/italian",
   Portuguese: "/dashboard/courses/portuguese",
-  Serbian: "/dashboard/courses/serbian",
-  Persian: "/dashboard/courses/mandarin",
-  Hindi: "/dashboard/courses/hindi",
-  Russian: "/dashboard/courses/russian",
+  Serbian:    "/dashboard/courses/serbian",
+  Persian:    "/dashboard/courses/mandarin",
+  Hindi:      "/dashboard/courses/hindi",
+  Russian:    "/dashboard/courses/russian",
 };
 
 const fadeIn = {
@@ -55,47 +60,40 @@ const fadeIn = {
   show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
-function slugifyCourse(name: string) {
-  return name.toLowerCase().replace(/\s+/g, "-");
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Derives completion % from Firestore courseProgress stored in UserProfileContext.
+ * Returns 0 if no progress found.
+ */
+function getFirestoreProgress(
+  courseName: string,
+  totalLessons: number,
+  courseProgress: Array<{ courseName: string; lessons: Array<{ sectionsComplete: number }> }>
+): number {
+  const cp = courseProgress.find((c) => c.courseName === courseName);
+  if (!cp) return 0;
+
+  const completedLessons = cp.lessons.filter(
+    (l) => l.sectionsComplete >= TOTAL_SECTIONS
+  ).length;
+
+  if (totalLessons === 0) return 0;
+  return Math.round((completedLessons / totalLessons) * 100);
 }
 
-function hasCourseStarted(name: string): boolean {
-  if (typeof window === "undefined") return false;
-  const slug = slugifyCourse(name);
-  const startedKey = `bllp-${slug}-started`;
-
-  if (localStorage.getItem(startedKey) === "true") {
-    return true;
-  }
-
-  const lessonPrefix = `bllp-${slug}-lesson-`;
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith(lessonPrefix)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-const SECTIONS_PER_LESSON = 6;
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CoursesPage() {
   const router = useRouter();
   const { enrolled, enroll, drop } = useCourses();
+  const { profile } = useUserProfile();
 
   const [confirmEnroll, setConfirmEnroll] = useState<string | null>(null);
   const [confirmDrop, setConfirmDrop] = useState<string | null>(null);
-  const [startedCourses, setStartedCourses] = useState<Set<string>>(new Set());
 
   const enrolledCourses = allCourses.filter((c) => enrolled.includes(c.name));
-  const browseCourses = allCourses.filter((c) => !enrolled.includes(c.name));
-
-  useEffect(() => {
-    const started = new Set(enrolled.filter((name) => hasCourseStarted(name)));
-    setStartedCourses(started);
-  }, [enrolled]);
+  const browseCourses   = allCourses.filter((c) => !enrolled.includes(c.name));
 
   const handleEnroll = (name: string) => {
     enroll(name);
@@ -107,84 +105,73 @@ export default function CoursesPage() {
     setConfirmDrop(null);
   };
 
-  const getProgress = (courseName: string, lessons: number) => {
-    if (!enrolled.includes(courseName)) return 0;
-    if (typeof window === "undefined") return 0;
-
-    const slug = slugifyCourse(courseName);
-    const lessonKeyRegex = new RegExp(`^bllp-${slug}-lesson-(\\d+)$`);
-    let completedSections = 0;
-
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key || !lessonKeyRegex.test(key)) continue;
-
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-
-      const sections = Number.parseInt(raw, 10);
-      if (Number.isNaN(sections)) continue;
-
-      completedSections += Math.min(
-        Math.max(sections, 0),
-        SECTIONS_PER_LESSON
-      );
-    }
-
-    const totalSections = lessons * SECTIONS_PER_LESSON;
-    if (totalSections <= 0) return 0;
-
-    return Math.round(
-      (Math.min(completedSections, totalSections) / totalSections) * 100
-    );
-  };
-
   return (
     <>
       <h1 className="font-display text-3xl font-bold tracking-tight mb-8">
         Courses
       </h1>
 
-      {/* Confirm enroll dialog */}
+      {/* ── Confirm enroll dialog ── */}
       {confirmEnroll && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-sm rounded-xl border bg-card p-6 shadow-lg">
-            <h3 className="font-display text-lg font-bold">Enroll in {confirmEnroll}?</h3>
+            <h3 className="font-display text-lg font-bold">
+              Enroll in {confirmEnroll}?
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              You are about to enroll in the {confirmEnroll} course. Ready to start learning?
+              You are about to enroll in the {confirmEnroll} course. Ready to
+              start learning?
             </p>
             <div className="mt-6 flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setConfirmEnroll(null)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setConfirmEnroll(null)}>
+                Cancel
+              </Button>
               <Button onClick={() => handleEnroll(confirmEnroll)}>Enroll</Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Confirm drop dialog */}
+      {/* ── Confirm drop dialog ── */}
       {confirmDrop && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-sm rounded-xl border bg-card p-6 shadow-lg">
-            <h3 className="font-display text-lg font-bold text-red-600">Drop {confirmDrop}?</h3>
+            <h3 className="font-display text-lg font-bold text-red-600">
+              Drop {confirmDrop}?
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Are you sure you want to drop this course? All your activity will be erased.
+              Are you sure you want to drop this course? Your progress will be
+              removed.
             </p>
             <div className="mt-6 flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setConfirmDrop(null)}>Cancel</Button>
-              <Button variant="destructive" onClick={() => handleDrop(confirmDrop)}>Drop Course</Button>
+              <Button variant="outline" onClick={() => setConfirmDrop(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDrop(confirmDrop)}
+              >
+                Drop Course
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Enrolled Courses */}
+      {/* ── Enrolled Courses ── */}
       {enrolledCourses.length > 0 && (
         <section className="mb-10">
           <h2 className="mb-4 text-lg font-semibold">Enrolled Courses</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {enrolledCourses.map((course) => {
-              const hasStarted = startedCourses.has(course.name);
-              const progress = getProgress(course.name, course.lessons);
+              // Progress derived from Firestore — no localStorage
+              const progress = getFirestoreProgress(
+                course.name,
+                course.lessons,
+                profile?.courseProgress ?? []
+              );
+              const hasStarted = progress > 0;
+
               return (
                 <motion.div
                   key={course.name}
@@ -193,6 +180,7 @@ export default function CoursesPage() {
                   animate="show"
                   className="group relative rounded-xl border bg-card p-5 shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5"
                 >
+                  {/* Dropdown */}
                   <div className="absolute right-3 top-3">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -212,23 +200,32 @@ export default function CoursesPage() {
                   </div>
 
                   <span className="text-4xl">{course.flag}</span>
-                  <h3 className="mt-3 font-display text-base font-bold">{course.name}</h3>
+                  <h3 className="mt-3 font-display text-base font-bold">
+                    {course.name}
+                  </h3>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {course.lessons} lessons &middot; {course.level}
                   </p>
+
+                  {/* Progress bar */}
+                  {hasStarted && (
+                    <div className="mt-3 w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all duration-500"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  )}
 
                   <Button
                     size="sm"
                     className="mt-4 w-full"
                     onClick={() => {
-                      const slug = slugifyCourse(course.name);
-                      localStorage.setItem(`bllp-${slug}-started`, "true");
-                      setStartedCourses((prev) => new Set(prev).add(course.name));
                       const route = courseRoutes[course.name];
                       if (route) router.push(route);
                     }}
                   >
-                    {hasStarted ? "Continue" : "Start"}
+                    {hasStarted ? `Continue · ${progress}%` : "Start"}
                   </Button>
                 </motion.div>
               );
@@ -237,7 +234,7 @@ export default function CoursesPage() {
         </section>
       )}
 
-      {/* Browse Courses */}
+      {/* ── Browse Courses ── */}
       <section>
         <h2 className="mb-4 text-lg font-semibold">
           {enrolledCourses.length > 0 ? "Browse Courses" : "All Courses"}
@@ -252,11 +249,13 @@ export default function CoursesPage() {
               className="group rounded-xl border bg-card p-5 shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
             >
               <span className="text-4xl">{course.flag}</span>
-              <h3 className="mt-3 font-display text-base font-bold">{course.name}</h3>
+              <h3 className="mt-3 font-display text-base font-bold">
+                {course.name}
+              </h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 {course.lessons} lessons &middot; {course.level}
               </p>
-              <div className="mt-4 flex items-center gap-2">
+              <div className="mt-4">
                 <Button
                   size="sm"
                   className="w-full"

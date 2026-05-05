@@ -57,12 +57,19 @@ export default function DashboardPage() {
           </div>
           <div className="rounded-xl border bg-card p-6 shadow-sm">
             <p className="text-sm text-muted-foreground">Hours Learned</p>
-            <p className="mt-2 text-3xl font-bold">0</p>
+            <p className="mt-2 text-3xl font-bold">
+              {profile?.totalSecondsLearned
+                ? (profile.totalSecondsLearned / 3600).toFixed(1)
+                : "0"}h
+            </p>
           </div>
 
           <div className="rounded-xl border bg-card p-6 shadow-sm">
             <p className="text-sm text-muted-foreground">Current Streak</p>
-            <p className="mt-2 text-3xl font-bold">0 days</p>
+            <p className="mt-2 text-3xl font-bold">
+              {profile?.currentStreak ?? 0}{" "}
+              {(profile?.currentStreak ?? 0) === 1 ? "day" : "days"}
+            </p>
           </div>
         </motion.div>
 

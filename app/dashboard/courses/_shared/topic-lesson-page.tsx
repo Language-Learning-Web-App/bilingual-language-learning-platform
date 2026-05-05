@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getTopicMetaById, SupportedLanguage } from "./topic-lessons";
+import { saveLessonProgress, addSecondsLearned } from "@/app/lib/userProfileService";
+import { auth } from "@/app/lib/firebase-config";
+import { useUserProfile } from "@/app/context/UserProfileContext";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -581,6 +584,8 @@ export default function TopicLessonPage({
   backLabel: string;
   courseTitle: string;
 }) {
+  const { refreshProfile } = useUserProfile();
+
   const lessonId = parseLessonSlug(lessonSlug);
   const safeLessonId = lessonId ?? 1;
   const lesson = getGeneratedLesson(safeLessonId, language);
@@ -612,13 +617,34 @@ export default function TopicLessonPage({
     setMounted(true);
   }, [storageKey]);
 
+  // Save section progress to both localStorage and Firestore
   useEffect(() => {
     if (!mounted) return;
     if (!reviewMode && currentSection > highestReached) {
       setHighestReached(currentSection);
       localStorage.setItem(storageKey, String(currentSection));
+
+      // Write mid-lesson section progress to Firestore
+      const uid = auth.currentUser?.uid;
+      if (uid) {
+        saveLessonProgress(uid, courseTitle, safeLessonId, currentSection).then(
+          () => refreshProfile()
+        );
+      }
     }
-  }, [currentSection, highestReached, reviewMode, mounted, storageKey]);
+  }, [currentSection, highestReached, reviewMode, mounted, storageKey, courseTitle, safeLessonId, refreshProfile]);
+
+  useEffect(() => {
+    const startTime = Date.now();
+    return () => {
+      const secondsSpent = Math.floor((Date.now() - startTime) / 1000);
+      if (secondsSpent < 5) return;
+      const uid = auth.currentUser?.uid;
+      if (uid) {
+        addSecondsLearned(uid, secondsSpent).then(() => refreshProfile());
+      }
+    };
+  }, []);
 
   const quizQuestions = useMemo(
     () => [
@@ -1125,11 +1151,18 @@ export default function TopicLessonPage({
               ))}
               <div className="flex justify-end">
                 <Button
-                  onClick={() => {
+                  onClick={async () => {
                     setQuizSubmitted(true);
-                    localStorage.setItem(storageKey, String(sectionLabels.length));
                     setReviewMode(true);
                     setHighestReached(sectionLabels.length);
+                    localStorage.setItem(storageKey, String(sectionLabels.length));
+
+                    // Save completed lesson progress to Firestore
+                    const uid = auth.currentUser?.uid;
+                    if (uid) {
+                      await saveLessonProgress(uid, courseTitle, safeLessonId, sectionLabels.length);
+                      await refreshProfile();
+                    }
                   }}
                   disabled={quizAnswers.some((a) => a === null)}
                 >
@@ -1167,4 +1200,3 @@ export default function TopicLessonPage({
     </div>
   );
 }
-

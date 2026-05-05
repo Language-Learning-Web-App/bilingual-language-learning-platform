@@ -17,6 +17,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { saveLessonProgress } from "@/app/lib/userProfileService";
+import {auth } from "@/app/lib/firebase-config";
+import { useUserProfile } from "@/app/context/UserProfileContext";
+
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
@@ -488,6 +492,10 @@ function SpeakingPracticeSection({ onNext }: { onNext: () => void }) {
 }
 
 export default function SerbianLesson1Page() {
+  const { refreshProfile } = useUserProfile();
+  const COURSE_NAME = "Serbian";
+  const LESSON_ID = 1;
+
   const [mounted, setMounted] = useState(false);
   const [currentSection, setCurrentSection] = useState(0);
   const [highestReached, setHighestReached] = useState(0);
@@ -527,8 +535,16 @@ export default function SerbianLesson1Page() {
     if (!reviewMode && currentSection > highestReached) {
       setHighestReached(currentSection);
       localStorage.setItem(STORAGE_KEY, String(currentSection));
+
+      const uid = auth.currentUser?.uid;
+      if (uid) {
+        saveLessonProgress(uid, COURSE_NAME, LESSON_ID, currentSection).then(
+          () => refreshProfile()
+        );
+      }
+        
     }
-  }, [currentSection, highestReached, reviewMode, mounted]);
+  }, [currentSection, reviewMode, highestReached, refreshProfile]);
 
   if (!mounted) return null;
 
@@ -1399,9 +1415,9 @@ export default function SerbianLesson1Page() {
                     </Button>
                   </div>
                   <Button
-                    onClick={() => {
+                    onClick={async () => {
                       const s = quizAnswers.filter(
-                        (a, i) => a === quizQuestions[i].correct
+                        (a,i) => a === quizQuestions[i].correct
                       ).length;
                       const passed =
                         (s / quizQuestions.length) * 100 >= PASSING_PERCENT;
@@ -1418,11 +1434,15 @@ export default function SerbianLesson1Page() {
                         JSON.stringify(updated)
                       );
                       setQuizSubmitted(true);
+
                       if (passed) {
-                        localStorage.setItem(
-                          STORAGE_KEY,
-                          String(sectionLabels.length)
-                        );
+                        localStorage.setItem(STORAGE_KEY, String(sectionLabels.length));
+
+                        const uid = auth.currentUser?.uid;
+                        if (uid) {
+                          await saveLessonProgress(uid, COURSE_NAME, LESSON_ID, sectionLabels.length);
+                          await refreshProfile();
+                        }
                       }
                     }}
                     disabled={quizAnswers.some((a) => a === null)}

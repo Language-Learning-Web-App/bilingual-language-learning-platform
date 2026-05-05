@@ -35,6 +35,9 @@ export interface UserProfile {
     courseProgress: CourseProgress[];
     createdAt: string;
     lastLoginAt: string;
+    totalSecondsLearned: number;
+    currentStreak: number;
+    lastLoginDate: string;
 }
 
 const defaultProfile = (uid: string, email: string): UserProfile => ({
@@ -53,6 +56,9 @@ const defaultProfile = (uid: string, email: string): UserProfile => ({
     courseProgress: [],
     createdAt: new Date().toISOString(),
     lastLoginAt: new Date().toISOString(),
+    totalSecondsLearned: 0,
+    currentStreak: 0,
+    lastLoginDate: "",
 });
 
 export async function createUserProfile(uid: string, email: string): Promise<void>{
@@ -164,5 +170,39 @@ export async function resetLessonProgress(
 
   await updateDoc(doc(db, "users", uid), {
     courseProgress: updatedCourseProgress,
+  });
+}
+
+export async function addSecondsLearned(uid: string, seconds: number): Promise<void> {
+  const profile = await getUserProfile(uid);
+  if (!profile) return;
+  await updateDoc(doc(db, "users", uid), {
+    totalSecondsLearned: (profile.totalSecondsLearned ?? 0) + seconds,
+  });
+}
+
+export async function updateLoginStreak(uid: string): Promise<void> {
+  const profile = await getUserProfile(uid);
+  if (!profile) return;
+
+  const now = Date.now();
+  const lastLoginTimestamp = profile.lastLoginAt
+    ? new Date(profile.lastLoginAt).getTime()
+    : 0;
+
+  const secondsSinceLastLogin = (now - lastLoginTimestamp) / 1000;
+  const hoursSinceLastLogin = secondsSinceLastLogin / 3600;
+
+  // Must be at least 24 hours since last login to count
+  if (hoursSinceLastLogin < 24) return;
+
+  // Must be within 48 hours or the streak is broken (missed a day)
+  const newStreak = hoursSinceLastLogin <= 48
+    ? (profile.currentStreak ?? 0) + 1
+    : 1;
+
+  await updateDoc(doc(db, "users", uid), {
+    currentStreak: newStreak,
+    lastLoginAt: new Date().toISOString(),
   });
 }
