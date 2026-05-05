@@ -31,9 +31,9 @@ export default function ProfilePage() {
   useEffect(() => {
     if (firestoreProfile) {
       setLocalProfile({
-        name: firestoreProfile?.name ?? "User",
-        email: firestoreProfile?.email ?? "",
-        bio: firestoreProfile?.bio ?? "Student",
+        name: auth.currentUser?.displayName ?? firestoreProfile.name ?? "User",
+        email: firestoreProfile.email ?? "",
+        bio: firestoreProfile.bio ?? "Student",
       });
     }
   }, [firestoreProfile]);
