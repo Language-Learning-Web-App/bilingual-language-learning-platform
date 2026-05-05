@@ -6,7 +6,9 @@ export type SupportedLanguage =
   | "es"
   | "fr"
   | "de"
-  | "ja";
+  | "ja"
+  | "ar"
+  | "hi";
 
 export interface TopicMeta {
   id: number;
