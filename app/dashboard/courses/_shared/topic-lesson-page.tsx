@@ -49,7 +49,9 @@ type SpeakLang =
   | "es-ES"
   | "fr-FR"
   | "de-DE"
-  | "ja-JP";
+  | "ja-JP"
+  | "ar-SA"
+  | "hi-IN";
 
 async function speak(
   text: string,
@@ -126,6 +128,8 @@ const MAX_LESSON_BY_LANGUAGE: Record<SupportedLanguage, number> = {
   fr: 15,
   de: 15,
   ja: 15,
+  ar: 15,
+  hi: 15,
 };
 
 const LANGUAGE_FOLDER: Record<SupportedLanguage, string> = {
@@ -137,6 +141,8 @@ const LANGUAGE_FOLDER: Record<SupportedLanguage, string> = {
   fr: "french",
   de: "german",
   ja: "japanese",
+  ar: "arabic",
+  hi: "hindi",
 };
 
 const LANGUAGE_LOCALE: Record<
@@ -151,6 +157,8 @@ const LANGUAGE_LOCALE: Record<
   fr: "fr-FR",
   de: "de-DE",
   ja: "ja-JP",
+  ar: "ar-SA",
+  hi: "hi-IN",
 };
 
 function parseLessonSlug(
