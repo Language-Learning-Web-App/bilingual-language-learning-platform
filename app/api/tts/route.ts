@@ -4,7 +4,7 @@ const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel
 
 const VOICE_BY_LANG: Record<string, string> = {
   "tr-TR": "i1TucDpQnxpmWAx4aUAX",
-  "sr-Latn-RS": "w1Yv5j7mDBdGWLt63UIH", // Iva
+  "sr-Latn-RS": "4qzzOCHeXnGE5uxuQEWA", // Iva
   "ru-RU": "JKtNvDNrWu33P1xzttP2", // Ivan
   "es-ES": "6Gr4AVmTax1pMJO0lHRK", // Catalina
   "fr-FR": "odOFTFZU3DvAZ3EV3KHi", // Lucas
