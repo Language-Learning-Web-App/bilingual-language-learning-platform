@@ -1238,15 +1238,21 @@ export default function TopicLessonPage({
               <div className="flex justify-end">
                 <Button
                   onClick={async () => {
+                    const s = quizAnswers.filter((a, i) => a === quizQuestions[i].correct).length;
+                    const passed = (s / quizQuestions.length) * 100 >= 80;
+
+
                     setQuizSubmitted(true);
                     setReviewMode(true);
                     setHighestReached(sectionLabels.length);
-                    localStorage.setItem(storageKey, String(sectionLabels.length));
+                    if (passed) {
+                      localStorage.setItem(storageKey, String(sectionLabels.length));
+                    }
 
                     // Save completed lesson progress to Firestore
                     const uid = auth.currentUser?.uid;
                     if (uid) {
-                      await saveLessonProgress(uid, courseTitle, safeLessonId, sectionLabels.length);
+                      await saveLessonProgress(uid, courseTitle, safeLessonId, passed ? sectionLabels.length : highestReached);
                       await refreshProfile();
                     }
                   }}
