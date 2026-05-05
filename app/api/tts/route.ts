@@ -12,6 +12,8 @@ const VOICE_BY_LANG: Record<string, string> = {
   "de-DE": "wcqN36SUOZ0EhToc2OIu", // Daniel
   "ja-JP": "17ljzcHzSunXNkdixIEa", // Hirokoji
   "it-IT": "zFA34HbdHBvF8WhlSusK", // Nora
+  "zn-CN": "bhJUNIXWQQ94l8eI2VUf", // Amy
+  "pt-BR": "ejarTsrf33xoVlH9hMuy", // Luis
   "en-US": DEFAULT_VOICE_ID,
 };
 
