@@ -77,7 +77,9 @@ type LanguageFolder =
   | "german"
   | "japanese"
   | "arabic"
-  | "hindi";
+  | "hindi"
+  | "italian"
+  | "portuguese";
 
 function languageKey(code: string): LanguageFolder | null {
   if (code === "tr") return "turkish";
@@ -90,6 +92,8 @@ function languageKey(code: string): LanguageFolder | null {
   if (code === "ja") return "japanese";
   if (code === "ar") return "arabic";
   if (code === "hi") return "hindi";
+  if (code === "it") return "italian";
+  if (code === "pt") return "portuguese";
   return null;
 }
 
@@ -104,6 +108,8 @@ const MAX_LESSON_BY_LANGUAGE: Record<LanguageFolder, number> = {
   japanese: 15,
   arabic: 15,
   hindi: 15,
+  italian: 15,
+  portuguese: 15,
 };
 
 function toLessonContent(rows: CsvRow[]): LessonContent {

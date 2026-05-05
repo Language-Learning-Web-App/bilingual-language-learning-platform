@@ -51,7 +51,9 @@ type SpeakLang =
   | "de-DE"
   | "ja-JP"
   | "ar-SA"
-  | "hi-IN";
+  | "hi-IN"
+  | "it-IT"
+  | "pt-BR";
 
 async function speak(
   text: string,
@@ -130,6 +132,8 @@ const MAX_LESSON_BY_LANGUAGE: Record<SupportedLanguage, number> = {
   ja: 15,
   ar: 15,
   hi: 15,
+  it: 15,
+  pt: 15,
 };
 
 const LANGUAGE_FOLDER: Record<SupportedLanguage, string> = {
@@ -143,6 +147,8 @@ const LANGUAGE_FOLDER: Record<SupportedLanguage, string> = {
   ja: "japanese",
   ar: "arabic",
   hi: "hindi",
+  it: "italian",
+  pt: "portuguese",
 };
 
 const LANGUAGE_LOCALE: Record<
@@ -159,6 +165,8 @@ const LANGUAGE_LOCALE: Record<
   ja: "ja-JP",
   ar: "ar-SA",
   hi: "hi-IN",
+  it: "it-IT",
+  pt: "pt-BR",
 };
 
 function parseLessonSlug(
@@ -215,9 +223,20 @@ function SpeakingPracticeSection({
   const levelRafRef = useRef<number | null>(null);
   const maxLevelRef = useRef(0);
   const autoStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recordingStartTsRef = useRef<number>(0);
+  const hasSpokenRef = useRef(false);
+  const smoothedRmsRef = useRef(0);
+  const silenceStartTsRef = useRef<number | null>(null);
 
   const MAX_RECORDING_MS = 30000;
-  const MIN_LEVEL_THRESHOLD = 0.01;
+  const MIN_LEVEL_THRESHOLD = 0.006;
+  /** Raw RMS from getFloatTimeDomainData is often very small (0.005–0.03 for speech); older thresholds were too high and auto-stop never fired. */
+  const LEVEL_SMOOTHING = 0.22;
+  const VOICE_LEVEL_HI = 0.011;
+  const VOICE_LEVEL_LO = 0.0055;
+  const SILENCE_HANG_MS = 900;
+  const MIN_RECORDING_MS = 650;
+  const METER_TIMESLICE_MS = 120;
 
   const teardownAudioMeter = () => {
     if (levelRafRef.current !== null) {
@@ -330,13 +349,19 @@ function SpeakingPracticeSection({
         const AudioCtx =
           (window as any).AudioContext || (window as any).webkitAudioContext;
         const audioContext: AudioContext = new AudioCtx();
+        if (audioContext.state === "suspended") {
+          await audioContext.resume();
+        }
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 1024;
+        analyser.fftSize = 2048;
+        analyser.smoothingTimeConstant = 0.65;
         source.connect(analyser);
         audioContextRef.current = audioContext;
         analyserRef.current = analyser;
         maxLevelRef.current = 0;
+        smoothedRmsRef.current = 0;
+        silenceStartTsRef.current = null;
 
         const buffer = new Float32Array(analyser.fftSize);
         const tick = () => {
@@ -349,7 +374,37 @@ function SpeakingPracticeSection({
           }
           const rms = Math.sqrt(sumSquares / buffer.length);
           if (rms > maxLevelRef.current) maxLevelRef.current = rms;
-          setAudioLevel(rms);
+
+          const alpha = LEVEL_SMOOTHING;
+          smoothedRmsRef.current =
+            smoothedRmsRef.current * (1 - alpha) + rms * alpha;
+          const level = smoothedRmsRef.current;
+          setAudioLevel(level);
+
+          const now = performance.now();
+          const elapsed = now - recordingStartTsRef.current;
+
+          if (level >= VOICE_LEVEL_HI) {
+            hasSpokenRef.current = true;
+            silenceStartTsRef.current = null;
+          } else if (hasSpokenRef.current && level <= VOICE_LEVEL_LO) {
+            if (silenceStartTsRef.current === null) {
+              silenceStartTsRef.current = now;
+            } else if (
+              now - silenceStartTsRef.current >= SILENCE_HANG_MS &&
+              elapsed >= MIN_RECORDING_MS
+            ) {
+              const rec = mediaRecorderRef.current;
+              if (rec && rec.state !== "inactive") {
+                try {
+                  rec.stop();
+                } catch {}
+              }
+              return;
+            }
+          }
+          // LO < level < HI: no-op — keeps silence countdown across brief gaps.
+
           levelRafRef.current = requestAnimationFrame(tick);
         };
         levelRafRef.current = requestAnimationFrame(tick);
@@ -421,7 +476,7 @@ function SpeakingPracticeSection({
 
         if (audioBlob.size < 8000) {
           setSttError(
-            "Recording too short. Tap the mic, wait one full second, speak clearly, then tap again to stop."
+            "Recording was too short for transcription. Speak a full sentence, pause when you’re done so recording stops automatically, or tap the mic again to stop manually."
           );
           return;
         }
@@ -479,7 +534,16 @@ function SpeakingPracticeSection({
         stopMediaStream();
       };
 
-      recorder.start();
+      hasSpokenRef.current = false;
+      silenceStartTsRef.current = null;
+      smoothedRmsRef.current = 0;
+      recordingStartTsRef.current = performance.now();
+
+      try {
+        recorder.start(METER_TIMESLICE_MS);
+      } catch {
+        recorder.start();
+      }
       setListening(true);
 
       autoStopTimerRef.current = setTimeout(() => {
@@ -613,10 +677,10 @@ function SpeakingPracticeSection({
             </button>
             <p className="mt-3 text-sm text-muted-foreground">
               {listening
-                ? "Recording... tap again to stop"
+                ? "Listening… pause briefly when you’re done — recording stops automatically, or tap again to stop"
                 : transcribing
                   ? "Transcribing your speech..."
-                  : "Tap the microphone and speak"}
+                  : "Tap the microphone to start"}
             </p>
             {listening && (
               <div className="mx-auto mt-3 w-48">
@@ -624,12 +688,12 @@ function SpeakingPracticeSection({
                   <div
                     className="h-full bg-emerald-500 transition-[width] duration-75"
                     style={{
-                      width: `${Math.min(100, Math.round(audioLevel * 500))}%`,
+                      width: `${Math.min(100, Math.round(audioLevel * 800))}%`,
                     }}
                   />
                 </div>
                 <p className="mt-1 text-[10px] text-muted-foreground">
-                  {audioLevel > 0.02
+                  {audioLevel > VOICE_LEVEL_HI * 0.85
                     ? "Mic is picking up your voice"
                     : "Speak now — if the bar stays flat, check your mic"}
                 </p>
