@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // Rachel
 
 const VOICE_BY_LANG: Record<string, string> = {
-  "tr-TR": "i1TucDpQnxpmWAx4aUAX",
+  "tr-TR": "i1TucDpQnxpmWAx4aUAX", // Sayed
   "sr-Latn-RS": "4qzzOCHeXnGE5uxuQEWA", // Iva
   "ru-RU": "JKtNvDNrWu33P1xzttP2", // Ivan
   "es-ES": "6Gr4AVmTax1pMJO0lHRK", // Catalina
@@ -11,7 +11,6 @@ const VOICE_BY_LANG: Record<string, string> = {
   "de-DE": "wcqN36SUOZ0EhToc2OIu", // Daniel
   "ja-JP": "17ljzcHzSunXNkdixIEa", // Hirokoji
   "it-IT": "zFA34HbdHBvF8WhlSusK", // Nora
-  "zn-CN": "bhJUNIXWQQ94l8eI2VUf", // Amy
   "pt-BR": "ejarTsrf33xoVlH9hMuy", // Luis
   "hi-IN": "1qEiC6qsybMkmnNdVMbK", // Monika Sogam (native Hindi)
   "ar-SA": "albaa6OioIhKtKdCEkQw",
